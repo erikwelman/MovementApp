@@ -947,6 +947,89 @@ img {
   color: var(--text-secondary);
 }
 
+.bjj-start-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+.scroll-wheel-wrap {
+  position: relative;
+  width: 160px;
+  height: 144px; /* 3 items visible: 3 * 48px */
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scroll-wheel {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 48px 0; /* one item of padding top and bottom so center item can be first/last */
+  scrollbar-width: none;
+}
+
+.scroll-wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-wheel-item {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  scroll-snap-align: center;
+  transition: color 200ms ease, transform 200ms ease;
+  user-select: none;
+}
+
+.scroll-wheel-item.selected {
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.scroll-wheel-fade-top,
+.scroll-wheel-fade-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 48px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.scroll-wheel-fade-top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(10, 10, 10, 0.9), transparent);
+}
+
+.scroll-wheel-fade-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(10, 10, 10, 0.9), transparent);
+}
+
+.scroll-wheel-highlight {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  right: 0;
+  height: 48px;
+  border-top: 1px solid rgba(59, 130, 246, 0.3);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .btn-bjj-go {
   margin-top: 20px;
   padding: 16px 48px;

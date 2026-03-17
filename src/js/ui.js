@@ -51,7 +51,7 @@ const UI = {
           <button class="workout-card workout-card-bjj" data-nav="bjj-start" aria-label="BJJ Yoga Ball Circuit">
             <div class="workout-card-icon" aria-hidden="true">&#x1F94B;</div>
             <h2 class="workout-card-title">BJJ Yoga Ball Circuit</h2>
-            <p class="workout-card-sub">11 exercises &middot; 22 min</p>
+            <p class="workout-card-sub">Bounce into it</p>
           </button>
         </div>
       </div>`;
@@ -267,7 +267,23 @@ const UI = {
 
   // ── BJJ Screens ──────────────────────────────────────────────
 
+  _formatDurationLabel(secs) {
+    if (secs < 60) return secs + 's';
+    const m = secs / 60;
+    return m + ' min';
+  },
+
   renderBjjStart() {
+    const dur = App.bjjDuration;
+    const totalMin = Math.round((dur * 11) / 60);
+    const label = this._formatDurationLabel(dur);
+
+    // 30s to 5min in 30s increments
+    const options = [];
+    for (let s = 30; s <= 300; s += 30) {
+      options.push(`<div class="scroll-wheel-item" data-value="${s}">${this._formatDurationLabel(s)}</div>`);
+    }
+
     return `
       <div class="screen bjj-start-screen" role="main" aria-label="BJJ Yoga Ball Circuit">
         <header class="day-header">
@@ -276,7 +292,16 @@ const UI = {
         <div class="bjj-start-content">
           <div class="bjj-start-icon" aria-hidden="true">&#x1F94B;</div>
           <h1>BJJ Yoga Ball Circuit</h1>
-          <p class="bjj-start-info">11 exercises &middot; 2 min each &middot; 22 min total</p>
+          <p class="bjj-start-label">Time per exercise</p>
+          <div class="scroll-wheel-wrap" aria-label="Select duration">
+            <div class="scroll-wheel-fade-top"></div>
+            <div class="scroll-wheel" id="bjj-scroll-wheel">
+              ${options.join('')}
+            </div>
+            <div class="scroll-wheel-fade-bottom"></div>
+            <div class="scroll-wheel-highlight"></div>
+          </div>
+          <p class="bjj-start-info" id="bjj-total-info">11 exercises &middot; ${label} each &middot; ${totalMin} min total</p>
           <button class="btn-bjj-go" data-nav="bjj-countdown" aria-label="Start Circuit">Start Circuit</button>
         </div>
       </div>`;
@@ -304,7 +329,7 @@ const UI = {
         <div class="bjj-gif-container">
           ${imgSrc ? `<img class="bjj-gif" src="${imgSrc}" alt="${this.esc(exercise.name)}">` : '<div class="bjj-gif-placeholder"></div>'}
         </div>
-        <div class="bjj-timer-display" id="bjj-timer-display" role="timer" aria-live="polite" aria-atomic="true">${this.formatTime(exercise.duration)}</div>
+        <div class="bjj-timer-display" id="bjj-timer-display" role="timer" aria-live="polite" aria-atomic="true">${this.formatTime(App.bjjDuration)}</div>
         <div class="bjj-progress-bar-wrap">
           <div class="bjj-progress-bar">
             <div class="bjj-progress-fill" id="bjj-progress-fill" style="width:0%"></div>

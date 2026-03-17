@@ -5,6 +5,7 @@ const App = {
   currentDay: 1,
   currentPoseIndex: 0,
   bjjCountdownTimer: null,
+  bjjDuration: 120,
 
   init() {
     Progress.load();
@@ -45,6 +46,7 @@ const App = {
         break;
       case 'bjj-start':
         app.innerHTML = UI.renderBjjStart();
+        this.initBjjScrollWheel();
         break;
       case 'bjj-countdown':
         app.innerHTML = UI.renderBjjCountdown();
@@ -294,6 +296,52 @@ const App = {
 
   // ── BJJ Circuit ──────────────────────────────────────────────
 
+  initBjjScrollWheel() {
+    const wheel = document.getElementById('bjj-scroll-wheel');
+    if (!wheel) return;
+
+    const items = wheel.querySelectorAll('.scroll-wheel-item');
+    const ITEM_HEIGHT = 48;
+    const values = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
+
+    // Find initial index from current bjjDuration
+    let currentIndex = values.indexOf(this.bjjDuration);
+    if (currentIndex === -1) currentIndex = 3; // default 2min
+
+    // Scroll to selected position
+    wheel.scrollTop = currentIndex * ITEM_HEIGHT;
+    items[currentIndex].classList.add('selected');
+
+    const updateSelection = () => {
+      const scrollPos = wheel.scrollTop;
+      const idx = Math.round(scrollPos / ITEM_HEIGHT);
+      const clampedIdx = Math.max(0, Math.min(idx, values.length - 1));
+
+      items.forEach(item => item.classList.remove('selected'));
+      items[clampedIdx].classList.add('selected');
+
+      this.bjjDuration = values[clampedIdx];
+
+      const info = document.getElementById('bjj-total-info');
+      if (info) {
+        const totalMin = Math.round((this.bjjDuration * 11) / 60);
+        info.textContent = `11 exercises \u00b7 ${UI._formatDurationLabel(this.bjjDuration)} each \u00b7 ${totalMin} min total`;
+      }
+    };
+
+    let scrollTimeout;
+    wheel.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // Snap to nearest item
+        const idx = Math.round(wheel.scrollTop / ITEM_HEIGHT);
+        const clampedIdx = Math.max(0, Math.min(idx, values.length - 1));
+        wheel.scrollTo({ top: clampedIdx * ITEM_HEIGHT, behavior: 'smooth' });
+        updateSelection();
+      }, 80);
+    });
+  },
+
   initBjjCountdown() {
     let count = 3;
     const display = document.getElementById('bjj-countdown-number');
@@ -324,10 +372,8 @@ const App = {
   },
 
   initBjjTimer(exerciseIndex) {
-    const exercise = BJJ_EXERCISES[exerciseIndex];
-
     this.currentTimer = new PoseTimer(
-      exercise.duration,
+      this.bjjDuration,
       (remaining) => {
         UI.updateBjjTimer(remaining, this.currentTimer.progress, this.currentTimer.isRunning);
       },
