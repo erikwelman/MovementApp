@@ -7,11 +7,17 @@ const App = {
   bjjCountdownTimer: null,
   bjjDuration: 120,
 
+  _currentGameplan: null,
+
   init() {
     Progress.load();
     this.currentDay = Progress.getCurrentDay();
-    this.render('home');
     this.bindGlobalEvents();
+    GameplanStore.init().then(() => {
+      this.render('home');
+    }).catch(() => {
+      this.render('home');
+    });
   },
 
   render(screen, params) {
@@ -25,6 +31,10 @@ const App = {
     if (this.bjjCountdownTimer) {
       clearInterval(this.bjjCountdownTimer);
       this.bjjCountdownTimer = null;
+    }
+    // Clean up gameplan canvas if leaving editor
+    if (screen !== 'gp-editor' && GameplanCanvas._svg) {
+      GameplanCanvas.destroy();
     }
 
     switch (screen) {
@@ -60,12 +70,40 @@ const App = {
       case 'bjj-complete':
         app.innerHTML = UI.renderBjjComplete();
         break;
+
+      // ── Gameplan screens ──────────────────────────────────
+      case 'gp-list':
+        GameplanStore.getAll().then(plans => {
+          app.innerHTML = GameplanUI.renderList(plans);
+        });
+        break;
+      case 'gp-editor':
+        GameplanStore.get(params.id).then(gp => {
+          if (!gp) { this.render('gp-list'); return; }
+          this._currentGameplan = gp;
+          app.innerHTML = GameplanUI.renderEditor(gp);
+          GameplanCanvas.init('gp-svg-container', gp);
+        });
+        break;
     }
   },
 
   bindGlobalEvents() {
     // Event delegation on #app
     document.getElementById('app').addEventListener('click', (e) => {
+      // Check data-action BEFORE data-nav so buttons inside nav elements work
+      const earlyAction = e.target.closest('[data-action]');
+      if (earlyAction && earlyAction.dataset.action === 'gp-delete') {
+        e.stopPropagation();
+        const gpId = earlyAction.dataset.gpId;
+        if (confirm('Delete this gameplan?')) {
+          GameplanStore.delete(gpId).then(() => {
+            this.render('gp-list');
+          });
+        }
+        return;
+      }
+
       const target = e.target.closest('[data-nav]');
       if (target) {
         const nav = target.dataset.nav;
@@ -88,8 +126,226 @@ const App = {
           this.render('bjj-circuit', { exercise: parseInt(target.dataset.exercise || 0) });
         } else if (nav === 'bjj-complete') {
           this.render('bjj-complete');
+        } else if (nav === 'gp-list') {
+          this.render('gp-list');
+        } else if (nav === 'gp-editor') {
+          this.render('gp-editor', { id: target.dataset.gpId });
         }
         return;
+      }
+
+      // ── Gameplan actions ──────────────────────────────────
+      const actionEl = e.target.closest('[data-action]');
+      if (actionEl) {
+        const action = actionEl.dataset.action;
+
+        if (action === 'gp-create') {
+          const gp = GameplanData.createGameplan();
+          GameplanStore.save(gp).then(() => {
+            this.render('gp-editor', { id: gp.id });
+          });
+          return;
+        }
+
+        if (action === 'gp-delete') {
+          e.stopPropagation();
+          const gpId = actionEl.dataset.gpId;
+          if (confirm('Delete this gameplan?')) {
+            GameplanStore.delete(gpId).then(() => {
+              this.render('gp-list');
+            });
+          }
+          return;
+        }
+
+        if (action === 'gp-add-node') {
+          const type = actionEl.dataset.type;
+          const result = GameplanCanvas.addNode(type);
+          if (result) {
+            const newLabel = prompt('Name this node:', result.entry.label);
+            if (newLabel !== null && newLabel.trim()) {
+              GameplanCanvas.updateNodeLabel(result.node.id, newLabel.trim());
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-connect') {
+          GameplanCanvas.setConnectMode(!GameplanCanvas._connectMode);
+          return;
+        }
+
+        if (action === 'gp-delete-node') {
+          const connId = GameplanCanvas._selectedConnId;
+          if (connId) {
+            GameplanCanvas.deleteConnection(connId);
+            GameplanCanvas.selectConnection(null);
+            return;
+          }
+          const nodeId = GameplanCanvas._selectedNodeId;
+          if (nodeId) {
+            GameplanCanvas.deleteNode(nodeId);
+          }
+          return;
+        }
+
+        if (action === 'gp-open-detail') {
+          const node = GameplanCanvas.getSelectedNode();
+          if (node) GameplanUI.showNodeDetail(node);
+          return;
+        }
+
+        if (action === 'gp-close-detail') {
+          GameplanUI.closeNodeDetail();
+          return;
+        }
+
+        if (action === 'gp-add-note') {
+          const input = document.getElementById('gp-note-input');
+          if (input && input.value.trim()) {
+            const resolved = GameplanCanvas.getSelectedNode();
+            const raw = GameplanCanvas.getRawSelectedNode();
+            if (resolved && raw && raw.libraryId) {
+              const entry = GameplanStore.getLibraryEntry(raw.libraryId);
+              if (entry) {
+                entry.notes.push({ text: input.value.trim(), createdAt: new Date().toISOString() });
+                GameplanStore.saveLibraryEntry(entry);
+                GameplanUI.showNodeDetail(GameplanStore.resolveNode(raw));
+              }
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-delete-note') {
+          const idx = parseInt(actionEl.dataset.noteIndex);
+          const raw = GameplanCanvas.getRawSelectedNode();
+          if (raw && raw.libraryId && !isNaN(idx)) {
+            const entry = GameplanStore.getLibraryEntry(raw.libraryId);
+            if (entry) {
+              entry.notes.splice(idx, 1);
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showNodeDetail(GameplanStore.resolveNode(raw));
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-add-link') {
+          const urlInput = document.getElementById('gp-link-url-input');
+          const labelInput = document.getElementById('gp-link-label-input');
+          if (urlInput && urlInput.value.trim()) {
+            const raw = GameplanCanvas.getRawSelectedNode();
+            if (raw && raw.libraryId) {
+              const entry = GameplanStore.getLibraryEntry(raw.libraryId);
+              if (entry) {
+                entry.links.push({
+                  url: urlInput.value.trim(),
+                  label: (labelInput && labelInput.value.trim()) || ''
+                });
+                GameplanStore.saveLibraryEntry(entry);
+                GameplanUI.showNodeDetail(GameplanStore.resolveNode(raw));
+              }
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-delete-link') {
+          const idx = parseInt(actionEl.dataset.linkIndex);
+          const raw = GameplanCanvas.getRawSelectedNode();
+          if (raw && raw.libraryId && !isNaN(idx)) {
+            const entry = GameplanStore.getLibraryEntry(raw.libraryId);
+            if (entry) {
+              entry.links.splice(idx, 1);
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showNodeDetail(GameplanStore.resolveNode(raw));
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-open-link') {
+          e.preventDefault();
+          const url = actionEl.dataset.url;
+          if (url) window.open(url, '_blank');
+          return;
+        }
+
+        if (action === 'gp-rename') {
+          const gp = GameplanCanvas.getGameplan();
+          if (gp) {
+            const newName = prompt('Rename gameplan:', gp.name);
+            if (newName !== null && newName.trim()) {
+              gp.name = newName.trim();
+              actionEl.textContent = gp.name;
+              GameplanCanvas._scheduleSave();
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-tap-connection') {
+          const connId = actionEl.dataset.connHit;
+          if (connId) {
+            GameplanCanvas.selectConnection(connId);
+          }
+          return;
+        }
+
+        if (action === 'gp-edit-label') {
+          // Handled via input change below
+          return;
+        }
+
+        if (action === 'gp-open-library') {
+          Promise.all([
+            GameplanStore.getLibrary(),
+            GameplanStore.getAll()
+          ]).then(([entries, plans]) => {
+            const currentId = GameplanCanvas.getGameplan() ? GameplanCanvas.getGameplan().id : null;
+            GameplanUI.showLibrary(entries, plans, currentId);
+          });
+          return;
+        }
+
+        if (action === 'gp-library-import-gameplan') {
+          const gpId = actionEl.dataset.gpId;
+          if (gpId) {
+            GameplanStore.get(gpId).then(sourceGp => {
+              if (sourceGp) {
+                GameplanCanvas.importGameplan(sourceGp);
+                GameplanUI.closeLibrary();
+              }
+            });
+          }
+          return;
+        }
+
+        if (action === 'gp-library-select') {
+          const libId = actionEl.dataset.libraryId;
+          if (libId) {
+            GameplanCanvas.addNodeFromLibrary(libId);
+            GameplanUI.closeLibrary();
+          }
+          return;
+        }
+
+        if (action === 'gp-library-filter') {
+          const filter = actionEl.dataset.filter;
+          // Update active state on buttons
+          document.querySelectorAll('.gp-library-filter').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+          });
+          // Apply filter + search together
+          this._applyLibraryFilter();
+          return;
+        }
+
+        if (action === 'gp-close-library') {
+          GameplanUI.closeLibrary();
+          return;
+        }
       }
 
       // Image lightbox
@@ -171,9 +427,47 @@ const App = {
       }
     });
 
+    // Gameplan input handling (label edit + library search)
+    document.getElementById('app').addEventListener('input', (e) => {
+      if (e.target.id === 'gp-detail-label-input') {
+        const node = GameplanCanvas.getSelectedNode();
+        if (node) {
+          GameplanCanvas.updateNodeLabel(node.id, e.target.value);
+        }
+      }
+      if (e.target.id === 'gp-library-search') {
+        this._applyLibraryFilter();
+      }
+      if (e.target.dataset.action === 'gp-edit-note-inline') {
+        const idx = parseInt(e.target.dataset.noteIndex);
+        const raw = GameplanCanvas.getRawSelectedNode();
+        if (raw && raw.libraryId && !isNaN(idx)) {
+          const entry = GameplanStore.getLibraryEntry(raw.libraryId);
+          if (entry && entry.notes[idx]) {
+            entry.notes[idx].text = e.target.value;
+            GameplanStore.saveLibraryEntry(entry);
+          }
+        }
+      }
+    });
+
     // Global keyboard handler
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        // Close library overlay
+        const gpLibrary = document.querySelector('.gp-library-overlay');
+        if (gpLibrary) {
+          GameplanUI.closeLibrary();
+          return;
+        }
+
+        // Close gameplan node detail overlay
+        const gpDetail = document.querySelector('.gp-node-detail-overlay');
+        if (gpDetail) {
+          GameplanUI.closeNodeDetail();
+          return;
+        }
+
         // Close lightbox if open
         const lb = document.getElementById('image-lightbox');
         if (lb && lb.classList.contains('active')) {
@@ -208,6 +502,46 @@ const App = {
             timerBtn.setAttribute('aria-label', label + ' timer');
           }
         }
+      }
+    });
+  },
+
+  _applyLibraryFilter() {
+    const searchInput = document.getElementById('gp-library-search');
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const activeFilter = document.querySelector('.gp-library-filter.active');
+    const typeFilter = activeFilter ? activeFilter.dataset.filter : 'all';
+
+    // Show/hide moves and gameplans based on filter
+    const items = document.querySelectorAll('.gp-library-item, .gp-empty-sub');
+    items.forEach(item => {
+      const label = (item.dataset.label || '').toLowerCase();
+      const type = item.dataset.type || '';
+      const isMove = item.classList.contains('gp-library-move');
+      const isGameplan = item.classList.contains('gp-library-gameplan');
+
+      if (typeFilter === 'gameplan') {
+        // Show only gameplans
+        if (isMove) { item.style.display = 'none'; return; }
+        if (isGameplan) {
+          const matchesSearch = !query || label.includes(query);
+          item.style.display = matchesSearch ? '' : 'none';
+          return;
+        }
+      } else {
+        // Show only moves (hide gameplans)
+        if (isGameplan) { item.style.display = 'none'; return; }
+        if (isMove) {
+          const matchesSearch = !query || label.includes(query);
+          const matchesType = typeFilter === 'all' || type === typeFilter;
+          item.style.display = (matchesSearch && matchesType) ? '' : 'none';
+          return;
+        }
+      }
+      // Empty-state paragraphs
+      if (item.tagName === 'P') {
+        item.style.display = (typeFilter === 'gameplan' && item.classList.contains('gp-library-gameplan')) ||
+                             (typeFilter !== 'gameplan' && item.classList.contains('gp-library-move')) ? '' : 'none';
       }
     });
   },

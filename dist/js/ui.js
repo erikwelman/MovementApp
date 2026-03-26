@@ -36,24 +36,41 @@ const UI = {
   renderMainHome() {
     const daysCompleted = CHALLENGE_DATA.filter(d => Progress.isDayComplete(d.day)).length;
     const hipSubtext = daysCompleted > 0 ? `${daysCompleted}/21 days complete` : 'Start your journey';
+    const gpCount = GameplanStore.count;
+    const gpSubtext = gpCount > 0 ? `${gpCount} gameplan${gpCount !== 1 ? 's' : ''}` : 'Map your BJJ game';
 
     return `
       <div class="screen main-home-screen" role="main" aria-label="Movement App">
         <header class="app-header">
           <h1>Movement App</h1>
         </header>
-        <div class="workout-cards">
-          <button class="workout-card workout-card-hip" data-nav="hip-home" aria-label="21-Day Hip Opening Challenge">
-            <div class="workout-card-icon" aria-hidden="true">&#x1F9D8;</div>
-            <h2 class="workout-card-title">21-Day Hip Opening Challenge</h2>
-            <p class="workout-card-sub">${hipSubtext}</p>
-          </button>
-          <button class="workout-card workout-card-bjj" data-nav="bjj-start" aria-label="BJJ Yoga Ball Circuit">
-            <div class="workout-card-icon" aria-hidden="true">&#x1F94B;</div>
-            <h2 class="workout-card-title">BJJ Yoga Ball Circuit</h2>
-            <p class="workout-card-sub">Bounce into it</p>
-          </button>
-        </div>
+
+        <section class="home-section">
+          <h2 class="home-section-title">Gameplan</h2>
+          <div class="workout-cards">
+            <button class="workout-card workout-card-gp" data-nav="gp-list" aria-label="BJJ Gameplan">
+              <div class="workout-card-icon" aria-hidden="true">&#x1F4CB;</div>
+              <h2 class="workout-card-title">BJJ Gameplan</h2>
+              <p class="workout-card-sub">${gpSubtext}</p>
+            </button>
+          </div>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">Keep Moving</h2>
+          <div class="workout-cards">
+            <button class="workout-card workout-card-hip" data-nav="hip-home" aria-label="21-Day Hip Opening Challenge">
+              <div class="workout-card-icon" aria-hidden="true">&#x1F9D8;</div>
+              <h2 class="workout-card-title">21-Day Hip Opening Challenge</h2>
+              <p class="workout-card-sub">${hipSubtext}</p>
+            </button>
+            <button class="workout-card workout-card-bjj" data-nav="bjj-start" aria-label="BJJ Yoga Ball Circuit">
+              <div class="workout-card-icon" aria-hidden="true">&#x1F94B;</div>
+              <h2 class="workout-card-title">BJJ Yoga Ball Circuit</h2>
+              <p class="workout-card-sub">Bounce into it</p>
+            </button>
+          </div>
+        </section>
       </div>`;
   },
 

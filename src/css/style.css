@@ -27,6 +27,9 @@
   --accent-bjj: #3B82F6;
   --accent-bjj-dark: #2563EB;
   --accent-bjj-glow: rgba(59, 130, 246, 0.28);
+  --accent-gp: #10B981;
+  --accent-gp-dark: #059669;
+  --accent-gp-glow: rgba(16, 185, 129, 0.28);
 }
 
 /* ── Reset & Base ──────────────────────────────────────────── */
@@ -1220,4 +1223,748 @@ img {
 .btn-congrats-next.bjj-accent {
   background: linear-gradient(135deg, var(--accent-bjj), var(--accent-bjj-dark));
   box-shadow: 0 4px 20px var(--accent-bjj-glow);
+}
+
+/* ── Gameplan ─────────────────────────────────────────────── */
+
+/* Home sections */
+.home-section {
+  margin-bottom: 24px;
+}
+.home-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+/* Gameplan card on home */
+.workout-card-gp {
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02));
+}
+.workout-card-gp:hover,
+.workout-card-gp:focus-visible {
+  border-color: var(--accent-gp);
+  box-shadow: 0 8px 32px var(--accent-gp-glow);
+}
+
+/* ── Gameplan List Screen ──────────────────────────────────── */
+
+.gp-list-screen {
+  padding-bottom: 32px;
+}
+.gp-list-screen .screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+.gp-list-screen .screen-header h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.gp-create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed rgba(16, 185, 129, 0.4);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--accent-gp);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: 20px;
+}
+.gp-create-btn:hover,
+.gp-create-btn:focus-visible {
+  border-color: var(--accent-gp);
+  background: rgba(16, 185, 129, 0.08);
+}
+.gp-create-btn-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.gp-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gp-plan-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  backdrop-filter: blur(8px);
+}
+.gp-plan-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.gp-plan-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.gp-plan-card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-plan-card-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.gp-plan-card-delete {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-plan-card-delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+}
+
+.gp-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ── Gameplan Editor ───────────────────────────────────────── */
+
+.gp-editor-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+}
+.gp-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.gp-editor-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.gp-editor-title:hover {
+  color: var(--accent-gp);
+}
+
+.gp-svg-container {
+  flex: 1;
+  overflow: hidden;
+  touch-action: none;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+  background-size: 30px 30px;
+  position: relative;
+}
+
+.gp-svg {
+  display: block;
+}
+
+.gp-svg.connect-mode {
+  cursor: crosshair;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────── */
+
+.gp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.gp-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-toolbar-btn:hover,
+.gp-toolbar-btn:focus-visible {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-gp);
+}
+.gp-toolbar-btn-labeled {
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  height: auto;
+  padding: 6px 10px;
+}
+.gp-toolbar-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  pointer-events: none;
+}
+.gp-toolbar-btn.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-gp);
+  color: var(--accent-gp);
+}
+.gp-toolbar-btn-danger:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.gp-toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+}
+
+/* ── SVG Nodes ─────────────────────────────────────────────── */
+
+.gp-node {
+  cursor: grab;
+  transition: filter 0.15s ease;
+}
+.gp-node:active {
+  cursor: grabbing;
+}
+
+.gp-node-position rect {
+  fill: rgba(16, 185, 129, 0.12);
+  stroke: var(--accent-gp);
+  stroke-width: 2;
+}
+.gp-node-transition circle {
+  fill: rgba(59, 130, 246, 0.12);
+  stroke: var(--accent-bjj);
+  stroke-width: 2;
+}
+.gp-node-submission polygon {
+  fill: rgba(248, 113, 113, 0.12);
+  stroke: var(--danger);
+  stroke-width: 2;
+}
+
+.gp-node.selected rect,
+.gp-node.selected circle,
+.gp-node.selected polygon {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px var(--accent-gp-glow));
+}
+.gp-node.selected.gp-node-transition circle {
+  filter: drop-shadow(0 0 8px var(--accent-bjj-glow));
+}
+.gp-node.selected.gp-node-submission polygon {
+  filter: drop-shadow(0 0 8px var(--danger-glow));
+}
+
+.gp-node.connect-source rect,
+.gp-node.connect-source circle,
+.gp-node.connect-source polygon {
+  stroke-dasharray: 6 3;
+  animation: gp-connect-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes gp-connect-pulse {
+  from { stroke-opacity: 0.5; }
+  to { stroke-opacity: 1; }
+}
+
+.gp-node-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-family: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+
+.gp-note-indicator {
+  fill: var(--accent-gp);
+  opacity: 0.9;
+}
+.gp-note-count {
+  fill: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+/* ── SVG Connections ───────────────────────────────────────── */
+
+.gp-connection-hit {
+  stroke: transparent;
+  stroke-width: 36;
+  fill: none;
+  cursor: pointer;
+}
+.gp-connection-hit:hover + .gp-connection {
+  stroke-opacity: 1;
+  stroke-width: 3;
+}
+.gp-connection {
+  stroke: var(--accent-gp);
+  stroke-width: 2;
+  stroke-opacity: 0.6;
+  fill: none;
+  pointer-events: none;
+}
+.gp-connection.selected {
+  stroke-opacity: 1;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--accent-gp-glow));
+}
+.gp-conn-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+/* ── Node Detail Overlay ───────────────────────────────────── */
+
+.gp-node-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.gp-node-detail-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gp-node-detail-content {
+  width: 100%;
+  max-height: 80dvh;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.gp-node-detail-overlay.active .gp-node-detail-content {
+  transform: translateY(0);
+}
+
+.gp-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.gp-detail-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 1.3rem;
+  border-radius: 50%;
+  cursor: pointer;
+  order: 1;
+}
+.gp-detail-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.gp-detail-type svg {
+  color: var(--accent-gp);
+}
+
+.gp-detail-section {
+  margin-bottom: 20px;
+}
+.gp-detail-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.gp-detail-count {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.gp-detail-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition);
+  box-sizing: border-box;
+}
+.gp-detail-input:focus {
+  border-color: var(--accent-gp);
+}
+
+.gp-detail-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition);
+  box-sizing: border-box;
+}
+.gp-detail-textarea:focus {
+  border-color: var(--accent-gp);
+}
+
+.gp-detail-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: flex-start;
+}
+.gp-note-add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  align-items: center;
+}
+.gp-note-add-row .gp-detail-input {
+  flex: 1;
+}
+.gp-note-add-row .gp-detail-add-btn {
+  padding: 8px 14px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.gp-detail-add-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: var(--accent-gp);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.gp-detail-add-btn:hover {
+  background: var(--accent-gp-dark);
+}
+
+.gp-link-add-row {
+  flex-wrap: wrap;
+}
+.gp-link-add-row .gp-detail-input {
+  flex: 1;
+  min-width: 120px;
+}
+.gp-link-label-input {
+  max-width: 120px;
+}
+
+/* Notes and links list items */
+.gp-notes-list,
+.gp-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gp-note-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+.gp-link-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+.gp-note-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.gp-note-date {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.gp-note-text-edit {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.4;
+  padding: 4px 6px;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+  width: 100%;
+  box-sizing: border-box;
+}
+.gp-note-text-edit:focus {
+  border-color: var(--accent-gp);
+  background: var(--bg-card);
+}
+.gp-note-delete,
+.gp-link-delete {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.gp-note-delete:hover,
+.gp-link-delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+}
+
+.gp-link-url {
+  flex: 1;
+  color: var(--accent-gp);
+  font-size: 0.9rem;
+  text-decoration: none;
+  word-break: break-all;
+}
+.gp-link-url:hover {
+  text-decoration: underline;
+}
+
+.gp-empty-sub {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ── Move Library Overlay ──────────────────────────────────── */
+
+.gp-library-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.gp-library-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gp-library-content {
+  width: 100%;
+  max-height: 75dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.gp-library-overlay.active .gp-library-content {
+  transform: translateY(0);
+}
+.gp-library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.gp-library-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.gp-library-search {
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.gp-library-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.gp-library-filter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.gp-library-filter:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.gp-library-filter.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: var(--accent-gp);
+  color: var(--accent-gp);
+}
+.gp-library-list {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gp-library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  width: 100%;
+}
+.gp-library-item:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.gp-library-item-icon {
+  flex-shrink: 0;
+}
+.gp-library-icon-position { color: var(--accent-gp); }
+.gp-library-icon-transition { color: var(--accent-bjj); }
+.gp-library-icon-submission { color: var(--danger); }
+.gp-library-icon-gameplan { color: var(--text-secondary); }
+
+.gp-library-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gp-library-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-library-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
