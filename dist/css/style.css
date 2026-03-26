@@ -1501,6 +1501,11 @@ img {
   stroke: var(--danger);
   stroke-width: 2;
 }
+.gp-node-reaction polygon {
+  fill: rgba(250, 204, 21, 0.15);
+  stroke: #FACC15;
+  stroke-width: 2;
+}
 
 .gp-node.selected rect,
 .gp-node.selected circle,
@@ -1513,6 +1518,9 @@ img {
 }
 .gp-node.selected.gp-node-submission polygon {
   filter: drop-shadow(0 0 8px var(--danger-glow));
+}
+.gp-node.selected.gp-node-reaction polygon {
+  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.4));
 }
 
 .gp-node.connect-source rect,
@@ -1947,6 +1955,7 @@ img {
 .gp-library-icon-position { color: var(--accent-gp); }
 .gp-library-icon-transition { color: var(--accent-bjj); }
 .gp-library-icon-submission { color: var(--danger); }
+.gp-library-icon-reaction { color: #FACC15; }
 .gp-library-icon-gameplan { color: var(--text-secondary); }
 
 .gp-library-item-info {

@@ -26,11 +26,12 @@ const GameplanData = {
     const defaults = {
       position: 'New Position',
       transition: 'New Transition',
-      submission: 'New Submission'
+      submission: 'New Submission',
+      reaction: 'New Reaction'
     };
     return {
       id: this._uid(),
-      type: type,           // 'position' | 'transition' | 'submission'
+      type: type,           // 'position' | 'transition' | 'submission' | 'reaction'
       label: label || defaults[type] || 'Node',
       notes: [],            // [{ text, createdAt }]
       links: []             // [{ url, label }]

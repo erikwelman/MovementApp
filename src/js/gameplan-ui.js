@@ -65,6 +65,10 @@ const GameplanUI = {
             <svg width="20" height="20" viewBox="0 0 24 24"><polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
             <span class="gp-toolbar-label">Submission</span>
           </button>
+          <button class="gp-toolbar-btn gp-toolbar-btn-labeled" data-action="gp-add-node" data-type="reaction" aria-label="Add Reaction">
+            <svg width="20" height="20" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <span class="gp-toolbar-label">Reaction</span>
+          </button>
           <div class="gp-toolbar-divider"></div>
           <button class="gp-toolbar-btn gp-toolbar-btn-labeled" id="gp-btn-connect" data-action="gp-connect" aria-label="Connect nodes">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
@@ -94,12 +98,14 @@ const GameplanUI = {
     const typeLabels = {
       position: 'Position',
       transition: 'Transition / Sweep',
-      submission: 'Submission'
+      submission: 'Submission',
+      reaction: 'Opponent Reaction'
     };
     const typeIcons = {
       position: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>',
       transition: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>',
-      submission: '<polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/>'
+      submission: '<polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/>',
+      reaction: '<polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="2"/>'
     };
 
     const notesHtml = node.notes.map((n, i) => {
@@ -190,12 +196,14 @@ const GameplanUI = {
     const typeIcons = {
       position: '<rect x="4" y="4" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>',
       transition: '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>',
-      submission: '<polygon points="11,3 20,18 2,18" fill="none" stroke="currentColor" stroke-width="2"/>'
+      submission: '<polygon points="11,3 20,18 2,18" fill="none" stroke="currentColor" stroke-width="2"/>',
+      reaction: '<polygon points="11,2 20,11 11,20 2,11" fill="none" stroke="currentColor" stroke-width="2"/>'
     };
     const typeLabels = {
       position: 'Position',
       transition: 'Transition',
-      submission: 'Submission'
+      submission: 'Submission',
+      reaction: 'Reaction'
     };
 
     // Sort moves alphabetically
@@ -264,6 +272,10 @@ const GameplanUI = {
           <button class="gp-library-filter" data-action="gp-library-filter" data-filter="submission">
             <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
             Submission
+          </button>
+          <button class="gp-library-filter" data-action="gp-library-filter" data-filter="reaction">
+            <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Reaction
           </button>
           <button class="gp-library-filter" data-action="gp-library-filter" data-filter="gameplan">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><circle cx="15" cy="15" r="2"/><path d="M10.5 10.5L13.5 13.5"/></svg>

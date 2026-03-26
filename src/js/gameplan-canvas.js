@@ -376,6 +376,13 @@ const GameplanCanvas = {
       const poly = document.createElementNS(ns, 'polygon');
       poly.setAttribute('points', points);
       g.appendChild(poly);
+    } else if (node.type === 'reaction') {
+      // Diamond
+      const d = this.NODE_SIZE * 0.55;
+      const points = `0,${-d} ${d},0 0,${d} ${-d},0`;
+      const poly = document.createElementNS(ns, 'polygon');
+      poly.setAttribute('points', points);
+      g.appendChild(poly);
     }
 
     // Label
@@ -501,6 +508,16 @@ const GameplanCanvas = {
       } else {
         dist = half / absSin;
       }
+      return {
+        x: node.x + Math.cos(angle) * dist,
+        y: node.y + Math.sin(angle) * dist
+      };
+    } else if (node.type === 'reaction') {
+      // Diamond edge — intersection with diamond boundary
+      const d = this.NODE_SIZE * 0.55;
+      const absCos = Math.abs(Math.cos(angle));
+      const absSin = Math.abs(Math.sin(angle));
+      const dist = d / (absCos + absSin);
       return {
         x: node.x + Math.cos(angle) * dist,
         y: node.y + Math.sin(angle) * dist
