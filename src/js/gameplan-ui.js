@@ -31,10 +31,16 @@ const GameplanUI = {
           <button class="btn-back" data-nav="home" aria-label="Back">&#x2190;</button>
           <h1>BJJ Gameplans</h1>
         </header>
-        <button class="gp-create-btn" data-action="gp-create">
-          <span class="gp-create-btn-icon">+</span>
-          New Gameplan
-        </button>
+        <div class="gp-list-actions">
+          <button class="gp-create-btn" data-action="gp-create">
+            <span class="gp-create-btn-icon">+</span>
+            New Gameplan
+          </button>
+          <button class="gp-library-btn" data-action="gp-open-library-browse">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            Library
+          </button>
+        </div>
         ${empty}
         <div class="gp-plan-list">
           ${cards}
@@ -189,7 +195,10 @@ const GameplanUI = {
 
   // ── Move Library Overlay ──────────────────────────────────
 
-  showLibrary(entries, gameplans, currentGameplanId) {
+  _libraryMode: 'pick', // 'browse' or 'pick'
+
+  showLibrary(entries, gameplans, currentGameplanId, mode) {
+    this._libraryMode = mode || 'pick';
     const existing = document.querySelector('.gp-library-overlay');
     if (existing) existing.remove();
 
@@ -218,7 +227,7 @@ const GameplanUI = {
       const metaStr = meta.length > 0 ? ' &middot; ' + meta.join(', ') : '';
 
       return `
-        <button class="gp-library-item gp-library-move" data-action="gp-library-select" data-library-id="${entry.id}" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
+        <button class="gp-library-item gp-library-move" data-action="gp-library-view" data-library-id="${entry.id}" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
           <svg class="gp-library-item-icon gp-library-icon-${entry.type}" width="22" height="22" viewBox="0 0 22 22">${typeIcons[entry.type]}</svg>
           <div class="gp-library-item-info">
             <span class="gp-library-item-name">${UI.esc(entry.label)}</span>
@@ -312,6 +321,109 @@ const GameplanUI = {
 
     const searchInput = document.getElementById('gp-library-search');
     if (searchInput) searchInput.focus();
+  },
+
+  showLibraryEntryDetail(entry) {
+    const existing = document.querySelector('.gp-lib-detail-overlay');
+    if (existing) existing.remove();
+
+    const typeLabels = {
+      position: 'Position',
+      transition: 'Transition / Sweep',
+      submission: 'Submission',
+      reaction: 'Opponent Reaction'
+    };
+    const typeIcons = {
+      position: '<rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>',
+      transition: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>',
+      submission: '<polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/>',
+      reaction: '<polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="2"/>'
+    };
+
+    const notesHtml = (entry.notes || []).map((n, i) => {
+      const date = new Date(n.createdAt);
+      const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="gp-note-item">
+          <textarea class="gp-note-text-edit" data-action="gp-lib-edit-note" data-note-index="${i}" rows="2">${UI.esc(n.text)}</textarea>
+          <div class="gp-note-actions">
+            <span class="gp-note-date">${dateStr}</span>
+            <button class="gp-note-delete" data-action="gp-lib-delete-note" data-note-index="${i}" aria-label="Delete note">&times;</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    const linksHtml = (entry.links || []).map((l, i) => {
+      return `
+        <div class="gp-link-item">
+          <a href="${UI.esc(l.url)}" class="gp-link-url" data-action="gp-open-link" data-url="${UI.esc(l.url)}">${UI.esc(l.label || l.url)}</a>
+          <button class="gp-link-delete" data-action="gp-lib-delete-link" data-link-index="${i}" aria-label="Delete link">&times;</button>
+        </div>`;
+    }).join('');
+
+    const addBtn = this._libraryMode === 'pick'
+      ? `<button class="gp-lib-add-to-gp-btn" data-action="gp-library-add-to-gameplan" data-library-id="${entry.id}">
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+           Add to Gameplan
+         </button>`
+      : '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'gp-lib-detail-overlay';
+    overlay.setAttribute('data-library-id', entry.id);
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Move details');
+    overlay.innerHTML = `
+      <div class="gp-node-detail-content">
+        <div class="gp-detail-header">
+          <button class="gp-detail-close" data-action="gp-lib-detail-back" aria-label="Back">&#x2190;</button>
+          <div class="gp-detail-type">
+            <svg width="24" height="24" viewBox="0 0 24 24">${typeIcons[entry.type] || ''}</svg>
+            <span>${typeLabels[entry.type] || entry.type}</span>
+          </div>
+          ${addBtn}
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Name</label>
+          <input class="gp-detail-input" id="gp-lib-detail-label" type="text" value="${UI.esc(entry.label)}" data-action="gp-lib-edit-label" placeholder="Move name">
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Notes <span class="gp-detail-count">${(entry.notes || []).length}</span></label>
+          <div class="gp-notes-list" id="gp-lib-notes-list">
+            ${notesHtml || '<p class="gp-empty-sub">No notes yet</p>'}
+          </div>
+          <div class="gp-note-add-row">
+            <input class="gp-detail-input" id="gp-lib-note-input" type="text" placeholder="Add a note...">
+            <button class="gp-detail-add-btn" data-action="gp-lib-add-note">+</button>
+          </div>
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Links <span class="gp-detail-count">${(entry.links || []).length}</span></label>
+          <div class="gp-links-list" id="gp-lib-links-list">
+            ${linksHtml || '<p class="gp-empty-sub">No links yet</p>'}
+          </div>
+          <div class="gp-detail-add-row gp-link-add-row">
+            <input class="gp-detail-input" id="gp-lib-link-url-input" type="url" placeholder="https://...">
+            <input class="gp-detail-input gp-link-label-input" id="gp-lib-link-label-input" type="text" placeholder="Label (optional)">
+            <button class="gp-detail-add-btn" data-action="gp-lib-add-link">Add</button>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('app').appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('active'));
+  },
+
+  closeLibraryEntryDetail() {
+    const overlay = document.querySelector('.gp-lib-detail-overlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+      setTimeout(() => overlay.remove(), 200);
+    }
   },
 
   closeLibrary() {

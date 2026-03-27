@@ -1268,12 +1268,17 @@ img {
   font-weight: 700;
 }
 
+.gp-list-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
 .gp-create-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
   padding: 14px;
   border: 2px dashed rgba(16, 185, 129, 0.4);
   border-radius: var(--radius);
@@ -1283,7 +1288,6 @@ img {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition);
-  margin-bottom: 20px;
 }
 .gp-create-btn:hover,
 .gp-create-btn:focus-visible {
@@ -1293,6 +1297,27 @@ img {
 .gp-create-btn-icon {
   font-size: 1.4rem;
   line-height: 1;
+}
+.gp-library-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-library-btn:hover,
+.gp-library-btn:focus-visible {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-gp);
 }
 
 .gp-plan-list {
@@ -2020,4 +2045,50 @@ img {
 .gp-library-item-meta {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* ── Library Entry Detail Overlay ─────────────────────────── */
+
+.gp-lib-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.gp-lib-detail-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gp-lib-detail-overlay .gp-node-detail-content {
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.gp-lib-detail-overlay.active .gp-node-detail-content {
+  transform: translateY(0);
+}
+.gp-lib-add-to-gp-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 8px 14px;
+  border: 1px solid var(--accent-gp);
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-gp);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.gp-lib-add-to-gp-btn:hover,
+.gp-lib-add-to-gp-btn:focus-visible {
+  background: rgba(16, 185, 129, 0.3);
 }

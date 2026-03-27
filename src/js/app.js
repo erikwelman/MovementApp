@@ -302,7 +302,17 @@ const App = {
             GameplanStore.getAll()
           ]).then(([entries, plans]) => {
             const currentId = GameplanCanvas.getGameplan() ? GameplanCanvas.getGameplan().id : null;
-            GameplanUI.showLibrary(entries, plans, currentId);
+            GameplanUI.showLibrary(entries, plans, currentId, 'pick');
+          });
+          return;
+        }
+
+        if (action === 'gp-open-library-browse') {
+          Promise.all([
+            GameplanStore.getLibrary(),
+            GameplanStore.getAll()
+          ]).then(([entries, plans]) => {
+            GameplanUI.showLibrary(entries, plans, null, 'browse');
           });
           return;
         }
@@ -340,11 +350,90 @@ const App = {
           return;
         }
 
-        if (action === 'gp-library-select') {
+        if (action === 'gp-library-view') {
+          const libId = actionEl.dataset.libraryId;
+          if (libId) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            if (entry) GameplanUI.showLibraryEntryDetail(entry);
+          }
+          return;
+        }
+
+        if (action === 'gp-library-add-to-gameplan') {
           const libId = actionEl.dataset.libraryId;
           if (libId) {
             GameplanCanvas.addNodeFromLibrary(libId);
+            GameplanUI.closeLibraryEntryDetail();
             GameplanUI.closeLibrary();
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-detail-back') {
+          GameplanUI.closeLibraryEntryDetail();
+          return;
+        }
+
+        if (action === 'gp-lib-add-note') {
+          const input = document.getElementById('gp-lib-note-input');
+          const overlay = document.querySelector('.gp-lib-detail-overlay');
+          const libId = overlay ? overlay.dataset.libraryId : null;
+          if (input && input.value.trim() && libId) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            if (entry) {
+              entry.notes.push({ text: input.value.trim(), createdAt: new Date().toISOString() });
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showLibraryEntryDetail(entry);
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-delete-note') {
+          const idx = parseInt(actionEl.dataset.noteIndex);
+          const overlay = document.querySelector('.gp-lib-detail-overlay');
+          const libId = overlay ? overlay.dataset.libraryId : null;
+          if (libId && !isNaN(idx)) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            if (entry) {
+              entry.notes.splice(idx, 1);
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showLibraryEntryDetail(entry);
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-add-link') {
+          const urlInput = document.getElementById('gp-lib-link-url-input');
+          const labelInput = document.getElementById('gp-lib-link-label-input');
+          const overlay = document.querySelector('.gp-lib-detail-overlay');
+          const libId = overlay ? overlay.dataset.libraryId : null;
+          if (urlInput && urlInput.value.trim() && libId) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            if (entry) {
+              entry.links.push({
+                url: urlInput.value.trim(),
+                label: (labelInput && labelInput.value.trim()) || ''
+              });
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showLibraryEntryDetail(entry);
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-delete-link') {
+          const idx = parseInt(actionEl.dataset.linkIndex);
+          const overlay = document.querySelector('.gp-lib-detail-overlay');
+          const libId = overlay ? overlay.dataset.libraryId : null;
+          if (libId && !isNaN(idx)) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            if (entry) {
+              entry.links.splice(idx, 1);
+              GameplanStore.saveLibraryEntry(entry);
+              GameplanUI.showLibraryEntryDetail(entry);
+            }
           }
           return;
         }
@@ -467,11 +556,43 @@ const App = {
           }
         }
       }
+      // Library entry detail: label editing
+      if (e.target.id === 'gp-lib-detail-label') {
+        const overlay = document.querySelector('.gp-lib-detail-overlay');
+        const libId = overlay ? overlay.dataset.libraryId : null;
+        if (libId) {
+          const entry = GameplanStore.getLibraryEntry(libId);
+          if (entry) {
+            entry.label = e.target.value;
+            GameplanStore.saveLibraryEntry(entry);
+          }
+        }
+      }
+      // Library entry detail: inline note editing
+      if (e.target.dataset.action === 'gp-lib-edit-note') {
+        const idx = parseInt(e.target.dataset.noteIndex);
+        const overlay = document.querySelector('.gp-lib-detail-overlay');
+        const libId = overlay ? overlay.dataset.libraryId : null;
+        if (libId && !isNaN(idx)) {
+          const entry = GameplanStore.getLibraryEntry(libId);
+          if (entry && entry.notes[idx]) {
+            entry.notes[idx].text = e.target.value;
+            GameplanStore.saveLibraryEntry(entry);
+          }
+        }
+      }
     });
 
     // Global keyboard handler
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        // Close library entry detail first
+        const gpLibDetail = document.querySelector('.gp-lib-detail-overlay');
+        if (gpLibDetail) {
+          GameplanUI.closeLibraryEntryDetail();
+          return;
+        }
+
         // Close library overlay
         const gpLibrary = document.querySelector('.gp-library-overlay');
         if (gpLibrary) {
