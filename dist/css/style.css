@@ -1895,7 +1895,7 @@ img {
 }
 .gp-library-content {
   width: 100%;
-  max-height: 75dvh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
@@ -1997,10 +1997,12 @@ img {
 }
 .gp-library-list {
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  -webkit-overflow-scrolling: touch;
 }
 .gp-library-item {
   display: flex;
