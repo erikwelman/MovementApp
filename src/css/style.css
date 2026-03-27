@@ -2020,6 +2020,7 @@ img {
   text-align: left;
   width: 100%;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .gp-library-item:hover {
   border-color: rgba(16, 185, 129, 0.3);
