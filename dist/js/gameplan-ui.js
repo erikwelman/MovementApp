@@ -259,6 +259,25 @@ const GameplanUI = {
           <button class="gp-detail-close" data-action="gp-close-library" aria-label="Close">&times;</button>
         </div>
         <input class="gp-detail-input gp-library-search" id="gp-library-search" type="text" placeholder="Search..." autocomplete="off">
+        <div class="gp-library-add-row">
+          <span class="gp-library-add-label">Add:</span>
+          <button class="gp-library-add-btn gp-library-add-position" data-action="gp-library-create" data-type="position">
+            <svg width="14" height="14" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Position
+          </button>
+          <button class="gp-library-add-btn gp-library-add-transition" data-action="gp-library-create" data-type="transition">
+            <svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Transition
+          </button>
+          <button class="gp-library-add-btn gp-library-add-submission" data-action="gp-library-create" data-type="submission">
+            <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="12,3 22,20 2,20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Submission
+          </button>
+          <button class="gp-library-add-btn gp-library-add-reaction" data-action="gp-library-create" data-type="reaction">
+            <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Reaction
+          </button>
+        </div>
         <div class="gp-library-filters">
           <button class="gp-library-filter active" data-action="gp-library-filter" data-filter="all">All</button>
           <button class="gp-library-filter" data-action="gp-library-filter" data-filter="position">

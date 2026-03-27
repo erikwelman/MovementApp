@@ -320,6 +320,26 @@ const App = {
           return;
         }
 
+        if (action === 'gp-library-create') {
+          const type = actionEl.dataset.type;
+          const typeNames = { position: 'Position', transition: 'Transition', submission: 'Submission', reaction: 'Reaction' };
+          const name = prompt('Name this ' + (typeNames[type] || 'move') + ':');
+          if (name && name.trim()) {
+            const entry = GameplanData.createLibraryEntry(type, name.trim());
+            GameplanStore.saveLibraryEntry(entry);
+            // Refresh library view
+            Promise.all([
+              GameplanStore.getLibrary(),
+              GameplanStore.getAll()
+            ]).then(([entries, plans]) => {
+              const currentId = GameplanCanvas.getGameplan() ? GameplanCanvas.getGameplan().id : null;
+              GameplanUI.closeLibrary();
+              setTimeout(() => GameplanUI.showLibrary(entries, plans, currentId), 210);
+            });
+          }
+          return;
+        }
+
         if (action === 'gp-library-select') {
           const libId = actionEl.dataset.libraryId;
           if (libId) {

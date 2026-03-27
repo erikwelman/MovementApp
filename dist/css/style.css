@@ -1897,6 +1897,45 @@ img {
   margin-bottom: 10px;
   flex-shrink: 0;
 }
+.gp-library-add-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.gp-library-add-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.gp-library-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.gp-library-add-btn:hover,
+.gp-library-add-btn:focus-visible {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-gp);
+}
+.gp-library-add-position:hover { border-color: var(--accent-gp); color: var(--accent-gp); }
+.gp-library-add-transition:hover { border-color: var(--accent-bjj); color: var(--accent-bjj); }
+.gp-library-add-submission:hover { border-color: var(--danger); color: var(--danger); }
+.gp-library-add-reaction:hover { border-color: #FACC15; color: #FACC15; }
+
 .gp-library-filters {
   display: flex;
   gap: 6px;
