@@ -160,12 +160,10 @@ const App = {
 
         if (action === 'gp-add-node') {
           const type = actionEl.dataset.type;
-          const result = GameplanCanvas.addNode(type);
-          if (result) {
-            const newLabel = prompt('Name this node:', result.entry.label);
-            if (newLabel !== null && newLabel.trim()) {
-              GameplanCanvas.updateNodeLabel(result.node.id, newLabel.trim());
-            }
+          const typeNames = { position: 'Position', transition: 'Transition', submission: 'Submission', reaction: 'Reaction' };
+          const newLabel = prompt('Name this ' + (typeNames[type] || 'node') + ':');
+          if (newLabel !== null && newLabel.trim()) {
+            const result = GameplanCanvas.addNode(type, newLabel.trim());
           }
           return;
         }
