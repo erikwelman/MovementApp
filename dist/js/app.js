@@ -368,6 +368,21 @@ const App = {
           return;
         }
 
+        if (action === 'gp-library-delete') {
+          const libId = actionEl.dataset.libraryId;
+          if (libId) {
+            const entry = GameplanStore.getLibraryEntry(libId);
+            const name = entry ? entry.label : 'this move';
+            if (confirm('Remove "' + name + '" from the library? This cannot be undone.')) {
+              GameplanStore.deleteLibraryEntry(libId);
+              // Remove the item from the DOM
+              const item = actionEl.closest('.gp-library-item');
+              if (item) item.remove();
+            }
+          }
+          return;
+        }
+
         if (action === 'gp-library-add-to-gameplan') {
           const libId = actionEl.dataset.libraryId;
           if (libId) {

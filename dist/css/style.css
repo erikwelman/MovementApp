@@ -2057,6 +2057,25 @@ img {
 .gp-library-item-add:hover {
   background: rgba(16, 185, 129, 0.15);
 }
+.gp-library-item-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  align-self: stretch;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.gp-library-item-delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+}
 .gp-library-item-icon {
   flex-shrink: 0;
 }

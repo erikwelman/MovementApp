@@ -226,9 +226,9 @@ const GameplanUI = {
       if (linkCount > 0) meta.push(linkCount + ' link' + (linkCount !== 1 ? 's' : ''));
       const metaStr = meta.length > 0 ? ' &middot; ' + meta.join(', ') : '';
 
-      const addBtn = this._libraryMode === 'pick'
+      const actionBtn = this._libraryMode === 'pick'
         ? `<button class="gp-library-item-add" data-action="gp-library-quick-add" data-library-id="${entry.id}" aria-label="Add to gameplan">+</button>`
-        : '';
+        : `<button class="gp-library-item-delete" data-action="gp-library-delete" data-library-id="${entry.id}" aria-label="Delete move">&times;</button>`;
       return `
         <div class="gp-library-item gp-library-move" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
           <div class="gp-library-item-main" data-action="gp-library-view" data-library-id="${entry.id}">
@@ -238,7 +238,7 @@ const GameplanUI = {
               <span class="gp-library-item-meta">${typeLabels[entry.type]}${metaStr}</span>
             </div>
           </div>
-          ${addBtn}
+          ${actionBtn}
         </div>`;
     }).join('') : '<p class="gp-empty-sub gp-library-move">No moves in library yet.</p>';
 
