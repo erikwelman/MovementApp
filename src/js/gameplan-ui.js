@@ -226,14 +226,20 @@ const GameplanUI = {
       if (linkCount > 0) meta.push(linkCount + ' link' + (linkCount !== 1 ? 's' : ''));
       const metaStr = meta.length > 0 ? ' &middot; ' + meta.join(', ') : '';
 
+      const addBtn = this._libraryMode === 'pick'
+        ? `<button class="gp-library-item-add" data-action="gp-library-quick-add" data-library-id="${entry.id}" aria-label="Add to gameplan">+</button>`
+        : '';
       return `
-        <button class="gp-library-item gp-library-move" data-action="gp-library-view" data-library-id="${entry.id}" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
-          <svg class="gp-library-item-icon gp-library-icon-${entry.type}" width="22" height="22" viewBox="0 0 22 22">${typeIcons[entry.type]}</svg>
-          <div class="gp-library-item-info">
-            <span class="gp-library-item-name">${UI.esc(entry.label)}</span>
-            <span class="gp-library-item-meta">${typeLabels[entry.type]}${metaStr}</span>
+        <div class="gp-library-item gp-library-move" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
+          <div class="gp-library-item-main" data-action="gp-library-view" data-library-id="${entry.id}">
+            <svg class="gp-library-item-icon gp-library-icon-${entry.type}" width="22" height="22" viewBox="0 0 22 22">${typeIcons[entry.type]}</svg>
+            <div class="gp-library-item-info">
+              <span class="gp-library-item-name">${UI.esc(entry.label)}</span>
+              <span class="gp-library-item-meta">${typeLabels[entry.type]}${metaStr}</span>
+            </div>
           </div>
-        </button>`;
+          ${addBtn}
+        </div>`;
     }).join('') : '<p class="gp-empty-sub gp-library-move">No moves in library yet.</p>';
 
     // Gameplans (exclude current)
@@ -245,15 +251,17 @@ const GameplanUI = {
       meta.push(nodeCount + ' node' + (nodeCount !== 1 ? 's' : ''));
       meta.push(connCount + ' connection' + (connCount !== 1 ? 's' : ''));
       return `
-        <button class="gp-library-item gp-library-gameplan" data-action="gp-library-import-gameplan" data-gp-id="${gp.id}" data-label="${UI.esc(gp.name)}" data-type="gameplan">
-          <svg class="gp-library-item-icon gp-library-icon-gameplan" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="16" height="16" rx="3"/><circle cx="8" cy="8" r="2"/><circle cx="14" cy="14" r="2"/><path d="M9.5 9.5L12.5 12.5"/>
-          </svg>
-          <div class="gp-library-item-info">
-            <span class="gp-library-item-name">${UI.esc(gp.name)}</span>
-            <span class="gp-library-item-meta">${meta.join(' &middot; ')}</span>
+        <div class="gp-library-item gp-library-gameplan" data-label="${UI.esc(gp.name)}" data-type="gameplan">
+          <div class="gp-library-item-main" data-action="gp-library-import-gameplan" data-gp-id="${gp.id}">
+            <svg class="gp-library-item-icon gp-library-icon-gameplan" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="16" height="16" rx="3"/><circle cx="8" cy="8" r="2"/><circle cx="14" cy="14" r="2"/><path d="M9.5 9.5L12.5 12.5"/>
+            </svg>
+            <div class="gp-library-item-info">
+              <span class="gp-library-item-name">${UI.esc(gp.name)}</span>
+              <span class="gp-library-item-meta">${meta.join(' &middot; ')}</span>
+            </div>
           </div>
-        </button>`;
+        </div>`;
     }).join('') : '<p class="gp-empty-sub gp-library-gameplan">No other gameplans to import.</p>';
 
     const overlay = document.createElement('div');

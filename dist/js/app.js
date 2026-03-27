@@ -359,6 +359,15 @@ const App = {
           return;
         }
 
+        if (action === 'gp-library-quick-add') {
+          const libId = actionEl.dataset.libraryId;
+          if (libId) {
+            GameplanCanvas.addNodeFromLibrary(libId);
+            GameplanUI.closeLibrary();
+          }
+          return;
+        }
+
         if (action === 'gp-library-add-to-gameplan') {
           const libId = actionEl.dataset.libraryId;
           if (libId) {

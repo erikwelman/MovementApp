@@ -2004,19 +2004,50 @@ img {
 .gp-library-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 0;
+  padding: 0;
   background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   transition: all var(--transition);
   text-align: left;
   width: 100%;
+  overflow: hidden;
 }
 .gp-library-item:hover {
-  background: var(--bg-card-hover);
   border-color: rgba(16, 185, 129, 0.3);
+}
+.gp-library-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.gp-library-item-main:hover {
+  background: var(--bg-card-hover);
+}
+.gp-library-item-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  align-self: stretch;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--accent-gp);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.gp-library-item-add:hover {
+  background: rgba(16, 185, 129, 0.15);
 }
 .gp-library-item-icon {
   flex-shrink: 0;
