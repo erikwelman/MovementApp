@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movement-app-v5837ee127896';
+const CACHE_NAME = 'movement-app-vc413d94d7102';
 const ASSETS = [
   './',
   './index.html',

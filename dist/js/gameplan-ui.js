@@ -251,7 +251,7 @@ const GameplanUI = {
       meta.push(nodeCount + ' node' + (nodeCount !== 1 ? 's' : ''));
       meta.push(connCount + ' connection' + (connCount !== 1 ? 's' : ''));
       return `
-        <div class="gp-library-item gp-library-gameplan" data-label="${UI.esc(gp.name)}" data-type="gameplan">
+        <div class="gp-library-item gp-library-gameplan" data-label="${UI.esc(gp.name)}" data-type="gameplan" style="display:none">
           <div class="gp-library-item-main" data-action="gp-library-import-gameplan" data-gp-id="${gp.id}">
             <svg class="gp-library-item-icon gp-library-icon-gameplan" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="3" y="3" width="16" height="16" rx="3"/><circle cx="8" cy="8" r="2"/><circle cx="14" cy="14" r="2"/><path d="M9.5 9.5L12.5 12.5"/>
@@ -262,7 +262,7 @@ const GameplanUI = {
             </div>
           </div>
         </div>`;
-    }).join('') : '<p class="gp-empty-sub gp-library-gameplan">No other gameplans to import.</p>';
+    }).join('') : '<p class="gp-empty-sub gp-library-gameplan" style="display:none">No other gameplans to import.</p>';
 
     const overlay = document.createElement('div');
     overlay.className = 'gp-library-overlay';
