@@ -12,5 +12,4 @@ const BJJ_EXERCISES = [
   { id: "bjj8",  name: "Exercise 8",  imageKey: "8_BJJ_Yoga_Ball_Drill",  duration: 120 },
   { id: "bjj9",  name: "Exercise 9",  imageKey: "9_BJJ_Yoga_Ball_Drill",  duration: 120 },
   { id: "bjj10", name: "Exercise 10", imageKey: "10_BJJ_Yoga_Ball_Drill", duration: 120 },
-  { id: "bjj11", name: "Exercise 11", imageKey: "11_BJJ_Yoga_Ball_Drill", duration: 120 },
 ];

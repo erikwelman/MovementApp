@@ -292,7 +292,7 @@ const UI = {
 
   renderBjjStart() {
     const dur = App.bjjDuration;
-    const totalMin = Math.round((dur * 11) / 60);
+    const totalMin = Math.round((dur * 10) / 60);
     const label = this._formatDurationLabel(dur);
 
     // 30s to 5min in 30s increments
@@ -318,7 +318,7 @@ const UI = {
             <div class="scroll-wheel-fade-bottom"></div>
             <div class="scroll-wheel-highlight"></div>
           </div>
-          <p class="bjj-start-info" id="bjj-total-info">11 exercises &middot; ${label} each &middot; ${totalMin} min total</p>
+          <p class="bjj-start-info" id="bjj-total-info">10 exercises &middot; ${label} each &middot; ${totalMin} min total</p>
           <button class="btn-bjj-go" data-nav="bjj-countdown" aria-label="Start Circuit">Start Circuit</button>
         </div>
       </div>`;
@@ -384,7 +384,7 @@ const UI = {
         <div class="bjj-complete-content">
           <div class="congrats-icon" aria-hidden="true">&#x1F389;</div>
           <h2>Circuit Complete!</h2>
-          <p class="bjj-complete-sub">All 11 exercises done. Great work!</p>
+          <p class="bjj-complete-sub">All 10 exercises done. Great work!</p>
           <div class="congrats-buttons">
             <button class="btn-congrats-next bjj-accent" data-action="bjj-restart">Start Again</button>
             <button class="btn-congrats-home" data-nav="home">Home</button>

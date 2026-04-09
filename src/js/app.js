@@ -821,8 +821,8 @@ const App = {
 
       const info = document.getElementById('bjj-total-info');
       if (info) {
-        const totalMin = Math.round((this.bjjDuration * 11) / 60);
-        info.textContent = `11 exercises \u00b7 ${UI._formatDurationLabel(this.bjjDuration)} each \u00b7 ${totalMin} min total`;
+        const totalMin = Math.round((this.bjjDuration * 10) / 60);
+        info.textContent = `10 exercises \u00b7 ${UI._formatDurationLabel(this.bjjDuration)} each \u00b7 ${totalMin} min total`;
       }
     };
 
