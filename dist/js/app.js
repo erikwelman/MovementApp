@@ -536,7 +536,7 @@ const App = {
 
       // BJJ restart
       if (e.target.closest('[data-action="bjj-restart"]')) {
-        this.render('bjj-countdown');
+        this.render('bjj-circuit', { exercise: 0 });
         return;
       }
 
@@ -879,8 +879,32 @@ const App = {
       }
     );
 
-    // Auto-start
-    this.currentTimer.start();
+    // 3-2-1 countdown in the timer display before starting the main timer
+    let count = 3;
+    const display = document.getElementById('bjj-timer-display');
+    const toggleBtn = document.getElementById('btn-bjj-toggle');
+
+    // Disable pause button during countdown
+    if (toggleBtn) toggleBtn.disabled = true;
+    if (display) {
+      display.textContent = 'Starting in ' + count;
+      display.classList.add('bjj-countdown-active');
+    }
+
+    this.bjjCountdownTimer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        if (display) display.textContent = 'Starting in ' + count;
+      } else if (count === 0) {
+        if (display) display.textContent = 'GO!';
+      } else {
+        clearInterval(this.bjjCountdownTimer);
+        this.bjjCountdownTimer = null;
+        if (display) display.classList.remove('bjj-countdown-active');
+        if (toggleBtn) toggleBtn.disabled = false;
+        this.currentTimer.start();
+      }
+    }, 1000);
   },
 
   onBjjExerciseComplete(index) {

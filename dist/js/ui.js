@@ -319,7 +319,7 @@ const UI = {
             <div class="scroll-wheel-highlight"></div>
           </div>
           <p class="bjj-start-info" id="bjj-total-info">10 exercises &middot; ${label} each &middot; ${totalMin} min total</p>
-          <button class="btn-bjj-go" data-nav="bjj-countdown" aria-label="Start Circuit">Start Circuit</button>
+          <button class="btn-bjj-go" data-nav="bjj-circuit" data-exercise="0" aria-label="Start Circuit">Start Circuit</button>
         </div>
       </div>`;
   },
@@ -346,7 +346,7 @@ const UI = {
         <div class="bjj-gif-container">
           ${imgSrc ? `<img class="bjj-gif" src="${imgSrc}" alt="${this.esc(exercise.name)}">` : '<div class="bjj-gif-placeholder"></div>'}
         </div>
-        <div class="bjj-timer-display" id="bjj-timer-display" role="timer" aria-live="polite" aria-atomic="true">${this.formatTime(App.bjjDuration)}</div>
+        <div class="bjj-timer-display" id="bjj-timer-display" role="timer" aria-live="polite" aria-atomic="true">Starting in 3</div>
         <div class="bjj-progress-bar-wrap">
           <div class="bjj-progress-bar">
             <div class="bjj-progress-fill" id="bjj-progress-fill" style="width:0%"></div>

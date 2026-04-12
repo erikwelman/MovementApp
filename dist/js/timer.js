@@ -12,10 +12,11 @@ class PoseTimer {
     this._completed = false;
   }
 
-  start() {
+  async start() {
     if (this._completed || this._running) return;
     this._startTime = Date.now();
     this._running = true;
+    await this._acquireWakeLock();
     this._tick();
     this._interval = setInterval(() => this._tick(), 250); // 4Hz for smoother updates
   }
@@ -27,6 +28,7 @@ class PoseTimer {
     this._running = false;
     clearInterval(this._interval);
     this._interval = null;
+    this._releaseWakeLock();
   }
 
   resume() {
@@ -86,5 +88,38 @@ class PoseTimer {
     if (this._interval) clearInterval(this._interval);
     this._interval = null;
     this._running = false;
+    this._releaseWakeLock();
+  }
+
+  async _acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      this._wakeLock = await navigator.wakeLock.request('screen');
+      this._wakeLock.addEventListener('release', () => {
+        this._wakeLock = null;
+      });
+    } catch (_) {
+      // Wake lock request failed (e.g. low battery, tab hidden)
+    }
+    // Re-acquire wake lock when tab becomes visible again
+    if (!this._visibilityHandler) {
+      this._visibilityHandler = () => {
+        if (document.visibilityState === 'visible' && this._running) {
+          this._acquireWakeLock();
+        }
+      };
+      document.addEventListener('visibilitychange', this._visibilityHandler);
+    }
+  }
+
+  _releaseWakeLock() {
+    if (this._wakeLock) {
+      this._wakeLock.release();
+      this._wakeLock = null;
+    }
+    if (this._visibilityHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityHandler);
+      this._visibilityHandler = null;
+    }
   }
 }

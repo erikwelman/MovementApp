@@ -1133,6 +1133,11 @@ img {
   color: var(--text-primary);
 }
 
+.bjj-timer-display.bjj-countdown-active {
+  color: var(--accent-bjj);
+  text-shadow: 0 0 40px var(--accent-bjj-glow);
+}
+
 .bjj-progress-bar-wrap {
   width: 100%;
   max-width: 400px;
