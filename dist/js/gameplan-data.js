@@ -34,7 +34,13 @@ const GameplanData = {
       type: type,           // 'position' | 'transition' | 'submission' | 'reaction'
       label: label || defaults[type] || 'Node',
       notes: [],            // [{ text, createdAt }]
-      links: []             // [{ url, label }]
+      links: [],            // [{ url, label }]
+      tags: [],             // ['gi', 'no-gi', 'top', 'bottom', 'sweep', ...]
+      aliases: [],          // alternative names for search ('SLX', 'Ashi Garami', ...)
+      variantOf: null,      // library entry id this is a variation of (e.g. Knee Shield -> Half Guard)
+      category: null,       // grouping label for the library list ('Guards', 'Sweeps', ...)
+      fromPositionId: null, // for transitions/submissions: position this starts from
+      toPositionId: null    // for transitions: position this ends in
     };
   },
 
@@ -72,5 +78,16 @@ const GameplanData = {
       toNodeId: toNodeId,
       label: label || ''
     };
+  },
+
+  // ── Starter library ─────────────────────────────────────────
+  // Fixed ids ('seed-*') so variantOf references stay valid and
+  // re-adding the starter set never creates duplicates.
+
+  seedLibrary() {
+    // Data lives in gameplan-seed-data.js; deep-copy so cached library
+    // entries never share objects with the seed template.
+    if (typeof GAMEPLAN_SEED === 'undefined') return [];
+    return JSON.parse(JSON.stringify(GAMEPLAN_SEED));
   }
 };

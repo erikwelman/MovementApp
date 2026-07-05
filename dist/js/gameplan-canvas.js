@@ -80,16 +80,38 @@ const GameplanCanvas = {
     // Apply saved viewport
     this._applyViewport();
 
-    // Render existing nodes (resolved through library) and connections
-    gameplan.nodes.forEach(n => this._renderNode(GameplanStore.resolveNode(n)));
-    gameplan.connections.forEach(c => this._renderConnection(c));
+    // Render existing nodes (resolved through library) and connections.
+    // One broken node must never take out the rest of the canvas.
+    gameplan.nodes.forEach(n => {
+      try {
+        this._renderNode(GameplanStore.resolveNode(n));
+      } catch (err) {
+        console.error('Failed to render node', n.id, err);
+      }
+    });
+    gameplan.connections.forEach(c => {
+      try {
+        this._renderConnection(c);
+      } catch (err) {
+        console.error('Failed to render connection', c.id, err);
+      }
+    });
 
     // Bind touch/mouse events
     this._bindEvents();
   },
 
+  // Save any pending debounced changes immediately
+  flush() {
+    if (this._saveTimeout) {
+      clearTimeout(this._saveTimeout);
+      this._saveTimeout = null;
+      if (this._gameplan) GameplanStore.save(this._gameplan);
+    }
+  },
+
   destroy() {
-    if (this._saveTimeout) clearTimeout(this._saveTimeout);
+    this.flush();
     this._svg = null;
     this._viewport = null;
     this._nodesGroup = null;
@@ -102,26 +124,49 @@ const GameplanCanvas = {
   addNode(type, label) {
     if (!this._gameplan) return null;
 
-    const vp = this._gameplan.viewport;
-    const svgRect = this._svg.getBoundingClientRect();
-    // Place at center of visible area
-    const cx = (svgRect.width / 2 - vp.x) / vp.zoom;
-    const cy = (svgRect.height / 2 - vp.y) / vp.zoom;
+    // Reuse an existing library entry with the same name (or alias) instead of
+    // creating a duplicate — shared notes/links follow the move across plans.
+    let entry = GameplanStore.findLibraryEntry(label, type);
+    if (!entry) {
+      entry = GameplanData.createLibraryEntry(type, label);
+      GameplanStore.saveLibraryEntry(entry);
+    }
 
-    // Offset slightly if a node already exists nearby
-    const offset = this._gameplan.nodes.length * 15;
-
-    // Create library entry
-    const entry = GameplanData.createLibraryEntry(type, label);
-    GameplanStore.saveLibraryEntry(entry);
-
-    // Create node referencing library entry
-    const node = GameplanData.createNode(entry.id, cx + offset, cy + offset);
+    const spot = this._findFreeSpot();
+    const node = GameplanData.createNode(entry.id, spot.x, spot.y);
     this._gameplan.nodes.push(node);
     this._renderNode(GameplanStore.resolveNode(node));
     this.selectNode(node.id);
     this._scheduleSave();
     return { node: node, entry: entry };
+  },
+
+  // Find a spot near the center of the visible area that doesn't overlap
+  // an existing node, spiralling outward until one is free.
+  _findFreeSpot() {
+    const vp = this._gameplan.viewport;
+    const svgRect = this._svg.getBoundingClientRect();
+    const cx = (svgRect.width / 2 - vp.x) / vp.zoom;
+    const cy = (svgRect.height / 2 - vp.y) / vp.zoom;
+
+    const clearance = this.NODE_SIZE + 20;
+    const isFree = (x, y) => !this._gameplan.nodes.some(n => {
+      return Math.abs(n.x - x) < clearance && Math.abs(n.y - y) < clearance;
+    });
+
+    if (isFree(cx, cy)) return { x: cx, y: cy };
+
+    const step = clearance;
+    for (let ring = 1; ring <= 10; ring++) {
+      const points = 8 * ring;
+      for (let i = 0; i < points; i++) {
+        const angle = (i / points) * Math.PI * 2;
+        const x = cx + Math.cos(angle) * ring * step;
+        const y = cy + Math.sin(angle) * ring * step;
+        if (isFree(x, y)) return { x: x, y: y };
+      }
+    }
+    return { x: cx, y: cy };
   },
 
   importGameplan(sourceGp) {
@@ -173,21 +218,21 @@ const GameplanCanvas = {
     this._scheduleSave();
   },
 
-  addNodeFromLibrary(libraryId) {
+  // connectFromNodeId: optionally draw a connection from an existing node
+  // to the new one (used by "from here" library suggestions)
+  addNodeFromLibrary(libraryId, connectFromNodeId) {
     if (!this._gameplan) return null;
 
     const entry = GameplanStore.getLibraryEntry(libraryId);
     if (!entry) return null;
 
-    const vp = this._gameplan.viewport;
-    const svgRect = this._svg.getBoundingClientRect();
-    const cx = (svgRect.width / 2 - vp.x) / vp.zoom;
-    const cy = (svgRect.height / 2 - vp.y) / vp.zoom;
-    const offset = this._gameplan.nodes.length * 15;
-
-    const node = GameplanData.createNode(libraryId, cx + offset, cy + offset);
+    const spot = this._findFreeSpot();
+    const node = GameplanData.createNode(libraryId, spot.x, spot.y);
     this._gameplan.nodes.push(node);
     this._renderNode(GameplanStore.resolveNode(node));
+    if (connectFromNodeId && this._gameplan.nodes.some(n => n.id === connectFromNodeId)) {
+      this.addConnection(connectFromNodeId, node.id);
+    }
     this.selectNode(node.id);
     this._scheduleSave();
     return node;
@@ -237,6 +282,25 @@ const GameplanCanvas = {
     this._scheduleSave();
   },
 
+  getConnection(connId) {
+    if (!this._gameplan) return null;
+    return this._gameplan.connections.find(c => c.id === connId) || null;
+  },
+
+  updateConnectionLabel(connId, label) {
+    const conn = this.getConnection(connId);
+    if (!conn) return;
+    conn.label = label;
+    this._removeConnectionEl(conn.id);
+    this._renderConnection(conn);
+    // Re-apply selection highlight on the freshly rendered line
+    if (this._selectedConnId === connId) {
+      const el = this._connectionsGroup.querySelector(`[data-conn-id="${connId}"]`);
+      if (el) el.classList.add('selected');
+    }
+    this._scheduleSave();
+  },
+
   selectNode(nodeId) {
     // Deselect previous node
     if (this._selectedNodeId) {
@@ -260,6 +324,10 @@ const GameplanCanvas = {
     // Update detail button visibility
     const detailBtn = document.getElementById('gp-btn-detail');
     if (detailBtn) detailBtn.style.display = nodeId ? '' : 'none';
+
+    // Connection label button only applies to connections
+    const connLabelBtn = document.getElementById('gp-btn-conn-label');
+    if (connLabelBtn) connLabelBtn.style.display = 'none';
   },
 
   selectConnection(connId) {
@@ -290,10 +358,19 @@ const GameplanCanvas = {
     // Detail button only for nodes
     const detailBtn = document.getElementById('gp-btn-detail');
     if (detailBtn) detailBtn.style.display = this._selectedNodeId ? '' : 'none';
+
+    // Label button only for connections
+    const connLabelBtn = document.getElementById('gp-btn-conn-label');
+    if (connLabelBtn) connLabelBtn.style.display = connId ? '' : 'none';
   },
 
   setConnectMode(enabled) {
     this._connectMode = enabled;
+    // Clear any half-finished connection highlight
+    if (this._connectSourceId && this._nodesGroup) {
+      const srcEl = this._nodesGroup.querySelector(`[data-node-id="${this._connectSourceId}"]`);
+      if (srcEl) srcEl.classList.remove('connect-source');
+    }
     this._connectSourceId = null;
 
     const btn = document.getElementById('gp-btn-connect');
@@ -334,8 +411,8 @@ const GameplanCanvas = {
       node.label = label;
     }
 
-    const textEl = this._nodesGroup.querySelector(`[data-node-id="${nodeId}"] text`);
-    if (textEl) textEl.textContent = this._truncateLabel(label);
+    const el = this._nodesGroup.querySelector(`[data-node-id="${nodeId}"]`);
+    if (el) this._renderLabel(el, label);
     this._scheduleSave();
   },
 
@@ -346,7 +423,7 @@ const GameplanCanvas = {
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('data-node-id', node.id);
     g.setAttribute('data-action', 'gp-select-node');
-    g.setAttribute('class', 'gp-node gp-node-' + node.type);
+    g.setAttribute('class', 'gp-node gp-node-' + node.type + (node.missing ? ' gp-node-missing' : ''));
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
 
     const s = this.NODE_SIZE;
@@ -385,15 +462,8 @@ const GameplanCanvas = {
       g.appendChild(poly);
     }
 
-    // Label
-    const text = document.createElementNS(ns, 'text');
-    text.setAttribute('x', '0');
-    text.setAttribute('y', node.type === 'submission' ? '5' : '5');
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('dominant-baseline', 'middle');
-    text.setAttribute('class', 'gp-node-label');
-    text.textContent = this._truncateLabel(node.label);
-    g.appendChild(text);
+    // Label (wraps to two lines for longer move names)
+    this._renderLabel(g, node.label);
 
     // Note indicator
     if (node.notes.length > 0) {
@@ -532,8 +602,53 @@ const GameplanCanvas = {
     }
   },
 
-  _truncateLabel(text) {
-    return text.length > 14 ? text.slice(0, 12) + '...' : text;
+  // Word-wrap a label into at most two lines of ~11 characters
+  _wrapLabel(text) {
+    const MAX = 11;
+    if (text.length <= MAX + 2) return [text];
+    const words = text.split(' ');
+    let line1 = '';
+    let i = 0;
+    while (i < words.length) {
+      const candidate = line1 ? line1 + ' ' + words[i] : words[i];
+      if (candidate.length > MAX && line1) break;
+      line1 = candidate;
+      i++;
+    }
+    if (line1.length > MAX + 2) line1 = line1.slice(0, MAX) + '…';
+    let line2 = words.slice(i).join(' ');
+    if (!line2) return [line1];
+    if (line2.length > MAX + 2) line2 = line2.slice(0, MAX) + '…';
+    return [line1, line2];
+  },
+
+  // Render (or re-render) a node's label as one or two centered lines
+  _renderLabel(g, label) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const old = g.querySelector('text.gp-node-label');
+    if (old) old.remove();
+
+    const lines = this._wrapLabel(label);
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('x', '0');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('class', 'gp-node-label');
+
+    if (lines.length === 1) {
+      text.setAttribute('y', '5');
+      text.textContent = lines[0];
+    } else {
+      text.setAttribute('y', '0');
+      lines.forEach((ln, idx) => {
+        const tspan = document.createElementNS(ns, 'tspan');
+        tspan.setAttribute('x', '0');
+        tspan.setAttribute('y', idx === 0 ? '-2' : '11');
+        tspan.textContent = ln;
+        text.appendChild(tspan);
+      });
+    }
+    g.appendChild(text);
   },
 
   // ── Viewport ────────────────────────────────────────────────
@@ -719,8 +834,9 @@ const GameplanCanvas = {
             if (srcEl) srcEl.classList.remove('connect-source');
 
             this.addConnection(this._connectSourceId, nodeId);
+            // Stay in connect mode so several connections can be drawn in a row;
+            // tap the Connect button, empty space, or Escape to exit.
             this._connectSourceId = null;
-            this.setConnectMode(false);
           }
           return;
         }
@@ -738,7 +854,8 @@ const GameplanCanvas = {
       const wasTap = !this._panning.moved;
       this._panning = null;
       if (wasTap) {
-        // Tapped empty space — deselect everything
+        // Tapped empty space — exit connect mode and deselect everything
+        if (this._connectMode) this.setConnectMode(false);
         this.selectNode(null);
         this.selectConnection(null);
       } else {

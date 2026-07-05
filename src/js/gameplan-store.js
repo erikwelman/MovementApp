@@ -54,7 +54,7 @@ const GameplanStore = {
   getAll() {
     if (this._useLocalStorage) {
       const plans = this._lsRead(this._LS_KEY);
-      plans.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      plans.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
       return Promise.resolve(plans);
     }
 
@@ -64,7 +64,7 @@ const GameplanStore = {
       const request = store.getAll();
       request.onsuccess = () => {
         const plans = request.result;
-        plans.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        plans.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
         resolve(plans);
       };
       request.onerror = () => reject(request.error);
@@ -145,6 +145,7 @@ const GameplanStore = {
   },
 
   saveLibraryEntry(entry) {
+    this._normalizeEntry(entry);
     this._libraryCache[entry.id] = entry;
 
     if (this._useLocalStorage) {
@@ -196,20 +197,138 @@ const GameplanStore = {
           links: entry.links
         };
       }
+      // Library entry was deleted — render a placeholder instead of crashing
+      return {
+        id: node.id,
+        libraryId: node.libraryId,
+        x: node.x,
+        y: node.y,
+        type: 'position',
+        label: '(missing move)',
+        notes: [],
+        links: [],
+        missing: true
+      };
     }
-    // Legacy node with embedded data — return as-is
-    return node;
+    // Legacy node with embedded data — fill in anything absent so rendering never crashes
+    return {
+      id: node.id,
+      x: node.x || 0,
+      y: node.y || 0,
+      type: node.type || 'position',
+      label: node.label || '(unnamed)',
+      notes: node.notes || [],
+      links: node.links || []
+    };
+  },
+
+  // ── Referential integrity ─────────────────────────────────
+
+  // Returns { nodeCount, planNames } for a library entry across all gameplans
+  countLibraryUsage(libraryId) {
+    return this.getAll().then(plans => {
+      let nodeCount = 0;
+      const planNames = [];
+      plans.forEach(gp => {
+        const used = gp.nodes.filter(n => n.libraryId === libraryId).length;
+        if (used > 0) {
+          nodeCount += used;
+          planNames.push(gp.name);
+        }
+      });
+      return { nodeCount: nodeCount, planNames: planNames };
+    });
+  },
+
+  // Find an existing entry by name (label or alias), optionally restricted to a type
+  findLibraryEntry(label, type) {
+    if (!this._libraryCache || !label) return null;
+    const needle = label.trim().toLowerCase();
+    const entries = Object.values(this._libraryCache);
+    for (const entry of entries) {
+      if (type && entry.type !== type) continue;
+      if (entry.label.trim().toLowerCase() === needle) return entry;
+      if ((entry.aliases || []).some(a => a.trim().toLowerCase() === needle)) return entry;
+    }
+    return null;
+  },
+
+  // ── Export / Import ───────────────────────────────────────
+
+  exportData() {
+    return Promise.all([this.getAll(), this.getLibrary()]).then(([plans, entries]) => {
+      return {
+        app: 'MovementApp',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        library: entries,
+        gameplans: plans
+      };
+    });
+  },
+
+  // Merges by id: existing entries/plans with the same id are overwritten.
+  // Returns { libraryCount, gameplanCount }.
+  importData(data) {
+    if (!data || !Array.isArray(data.library) || !Array.isArray(data.gameplans)) {
+      return Promise.reject(new Error('Not a valid MovementApp export file'));
+    }
+    const saves = [];
+    data.library.forEach(entry => {
+      if (entry && entry.id && entry.type && entry.label !== undefined) {
+        saves.push(this.saveLibraryEntry(this._normalizeEntry(entry)));
+      }
+    });
+    data.gameplans.forEach(gp => {
+      if (gp && gp.id && Array.isArray(gp.nodes) && Array.isArray(gp.connections)) {
+        saves.push(this.save(gp));
+      }
+    });
+    return Promise.all(saves).then(() => ({
+      libraryCount: data.library.length,
+      gameplanCount: data.gameplans.length
+    }));
+  },
+
+  // ── Starter library ───────────────────────────────────────
+
+  // Adds seed moves, skipping any whose name or alias already exists.
+  // Returns the number of entries added.
+  addStarterLibrary() {
+    const seeds = GameplanData.seedLibrary();
+    const saves = [];
+    let added = 0;
+    seeds.forEach(seed => {
+      if (this._libraryCache[seed.id]) return; // already seeded
+      if (this.findLibraryEntry(seed.label)) return; // user has their own version
+      saves.push(this.saveLibraryEntry(seed));
+      added++;
+    });
+    return Promise.all(saves).then(() => added);
   },
 
   // ── Migration & init helpers ──────────────────────────────
+
+  // Ensure entries loaded from storage or imports have all current fields
+  _normalizeEntry(entry) {
+    if (!entry.notes) entry.notes = [];
+    if (!entry.links) entry.links = [];
+    if (!entry.tags) entry.tags = [];
+    if (!entry.aliases) entry.aliases = [];
+    if (entry.variantOf === undefined) entry.variantOf = null;
+    if (entry.category === undefined) entry.category = null;
+    if (entry.fromPositionId === undefined) entry.fromPositionId = null;
+    if (entry.toPositionId === undefined) entry.toPositionId = null;
+    return entry;
+  },
 
   _loadLibraryCache() {
     if (this._useLocalStorage) {
       const entries = this._lsRead(this._LS_LIB_KEY);
       this._libraryCache = {};
-      entries.forEach(e => { this._libraryCache[e.id] = e; });
+      entries.forEach(e => { this._libraryCache[e.id] = this._normalizeEntry(e); });
       // Migrate any legacy nodes
-      return this._migrateLegacyNodes();
+      return this._migrateLegacyNodes().then(() => this._maybeAutoSeed());
     }
     return Promise.resolve();
   },
@@ -222,14 +341,29 @@ const GameplanStore = {
       const request = store.getAll();
       request.onsuccess = () => {
         this._libraryCache = {};
-        (request.result || []).forEach(e => { this._libraryCache[e.id] = e; });
+        (request.result || []).forEach(e => { this._libraryCache[e.id] = this._normalizeEntry(e); });
         // Migrate legacy nodes
-        this._migrateLegacyNodes().then(resolve);
+        this._migrateLegacyNodes().then(() => this._maybeAutoSeed()).then(resolve);
       };
       request.onerror = () => {
         this._libraryCache = {};
         resolve();
       };
+    });
+  },
+
+  // First run with an empty library: pre-fill with the starter moves
+  _maybeAutoSeed() {
+    try {
+      if (localStorage.getItem('gpLibrarySeeded')) return Promise.resolve();
+    } catch (e) { /* localStorage unavailable — seed check skipped */ }
+    if (Object.keys(this._libraryCache).length > 0) {
+      // Existing users keep their library; they can add starters from the Library screen
+      try { localStorage.setItem('gpLibrarySeeded', '1'); } catch (e) {}
+      return Promise.resolve();
+    }
+    return this.addStarterLibrary().then(() => {
+      try { localStorage.setItem('gpLibrarySeeded', '1'); } catch (e) {}
     });
   },
 

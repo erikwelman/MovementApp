@@ -2155,3 +2155,199 @@ img {
 .gp-lib-add-to-gp-btn:focus-visible {
   background: rgba(16, 185, 129, 0.3);
 }
+
+/* ── Missing library entry placeholder ─────────────────────── */
+
+.gp-node-missing rect,
+.gp-node-missing circle,
+.gp-node-missing polygon {
+  fill: rgba(248, 113, 113, 0.08);
+  stroke: var(--danger);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+.gp-node-missing .gp-node-label {
+  fill: var(--danger);
+  font-style: italic;
+}
+
+/* ── Tags & aliases (library entry detail) ─────────────────── */
+
+.gp-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.gp-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.gp-alias-chip {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.gp-tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-tag-remove:hover,
+.gp-tag-remove:focus-visible {
+  background: rgba(248, 113, 113, 0.2);
+  color: var(--danger);
+}
+
+.gp-detail-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A3A3A3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.gp-detail-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Starter library button ────────────────────────────────── */
+
+.gp-library-starter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-library-starter-btn:hover,
+.gp-library-starter-btn:focus-visible {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-gp);
+}
+
+/* ── Library category headers ──────────────────────────────── */
+
+.gp-library-group-header {
+  padding: 14px 4px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
+}
+
+/* ── "From here" suggestions ───────────────────────────────── */
+
+.gp-library-suggest {
+  margin: 10px 0 2px;
+  padding: 10px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-sm);
+}
+
+.gp-library-suggest-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-gp);
+}
+
+.gp-library-suggest-hint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gp-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gp-suggest-item:last-child {
+  margin-bottom: 0;
+}
+.gp-suggest-item:hover,
+.gp-suggest-item:focus-visible {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-gp);
+}
+
+.gp-suggest-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gp-suggest-item-plus {
+  flex-shrink: 0;
+  color: var(--accent-gp);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* ── From/To position row in move detail ───────────────────── */
+
+.gp-fromto-row {
+  display: flex;
+  gap: 10px;
+}
+.gp-fromto-col {
+  flex: 1;
+  min-width: 0;
+}

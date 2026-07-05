@@ -40,6 +40,12 @@ const GameplanUI = {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
             Library
           </button>
+          <button class="gp-library-btn" data-action="gp-export" aria-label="Export backup" title="Export backup">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="gp-library-btn" data-action="gp-import" aria-label="Import backup" title="Import backup">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </button>
         </div>
         ${empty}
         <div class="gp-plan-list">
@@ -83,6 +89,9 @@ const GameplanUI = {
           <button class="gp-toolbar-btn gp-toolbar-btn-labeled" data-action="gp-open-library" aria-label="Move Library">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
             <span class="gp-toolbar-label">Library</span>
+          </button>
+          <button class="gp-toolbar-btn gp-toolbar-btn-detail" id="gp-btn-conn-label" data-action="gp-edit-conn-label" aria-label="Edit connection label" title="Label" style="display:none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           </button>
           <button class="gp-toolbar-btn gp-toolbar-btn-detail" id="gp-btn-detail" data-action="gp-open-detail" aria-label="Node details" title="Details" style="display:none">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
@@ -217,30 +226,105 @@ const GameplanUI = {
 
     // Sort moves alphabetically
     const sorted = entries.slice().sort((a, b) => a.label.localeCompare(b.label));
+    const byId = {};
+    entries.forEach(e => { byId[e.id] = e; });
 
-    const movesHtml = sorted.length > 0 ? sorted.map(entry => {
+    const renderItem = (entry) => {
       const noteCount = entry.notes ? entry.notes.length : 0;
       const linkCount = entry.links ? entry.links.length : 0;
+      const parent = entry.variantOf ? byId[entry.variantOf] : null;
+      const tags = entry.tags || [];
+      const aliases = entry.aliases || [];
+
       const meta = [];
+      meta.push(typeLabels[entry.type] || entry.type);
+      if (parent) meta.push('variant of ' + UI.esc(parent.label));
+      if (tags.length > 0) meta.push(tags.map(t => UI.esc(t)).join(', '));
       if (noteCount > 0) meta.push(noteCount + ' note' + (noteCount !== 1 ? 's' : ''));
       if (linkCount > 0) meta.push(linkCount + ' link' + (linkCount !== 1 ? 's' : ''));
-      const metaStr = meta.length > 0 ? ' &middot; ' + meta.join(', ') : '';
+
+      // Everything the search box should match against
+      const searchText = [entry.label]
+        .concat(aliases)
+        .concat(tags)
+        .concat(entry.category ? [entry.category] : [])
+        .concat(parent ? [parent.label] : [])
+        .join(' ');
 
       const actionBtn = this._libraryMode === 'pick'
         ? `<button class="gp-library-item-add" data-action="gp-library-quick-add" data-library-id="${entry.id}" aria-label="Add to gameplan">+</button>`
         : `<button class="gp-library-item-delete" data-action="gp-library-delete" data-library-id="${entry.id}" aria-label="Delete move">&times;</button>`;
       return `
-        <div class="gp-library-item gp-library-move" data-label="${UI.esc(entry.label)}" data-type="${entry.type}">
+        <div class="gp-library-item gp-library-move" data-label="${UI.esc(entry.label)}" data-search="${UI.esc(searchText)}" data-type="${entry.type}">
           <div class="gp-library-item-main" data-action="gp-library-view" data-library-id="${entry.id}">
             <svg class="gp-library-item-icon gp-library-icon-${entry.type}" width="22" height="22" viewBox="0 0 22 22">${typeIcons[entry.type]}</svg>
             <div class="gp-library-item-info">
               <span class="gp-library-item-name">${UI.esc(entry.label)}</span>
-              <span class="gp-library-item-meta">${typeLabels[entry.type]}${metaStr}</span>
+              <span class="gp-library-item-meta">${meta.join(' &middot; ')}</span>
             </div>
           </div>
           ${actionBtn}
         </div>`;
+    };
+
+    // Group entries under category headers, in a canonical order
+    const CATEGORY_ORDER = [
+      'Standing', 'Guards', 'Top control', 'Bad positions',
+      'Takedowns & standing', 'Passing', 'Sweeps', 'Escapes', 'Back takes',
+      'Chokes', 'Arm attacks', 'Leg attacks',
+      'General reactions', 'Submission defence', 'Passing defence'
+    ];
+    const groups = {};
+    sorted.forEach(entry => {
+      const cat = entry.category || 'Other';
+      (groups[cat] = groups[cat] || []).push(entry);
+    });
+    const groupNames = Object.keys(groups).sort((a, b) => {
+      const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+      if (a === 'Other') return 1;
+      if (b === 'Other') return -1;
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    const movesHtml = sorted.length > 0 ? groupNames.map(cat => {
+      return `<div class="gp-library-group-header" data-category="${UI.esc(cat)}">${UI.esc(cat)}</div>`
+        + groups[cat].map(renderItem).join('');
     }).join('') : '<p class="gp-empty-sub gp-library-move">No moves in library yet.</p>';
+
+    // "From here" suggestions: moves that start from the selected position node
+    let suggestHtml = '';
+    if (this._libraryMode === 'pick' && typeof GameplanCanvas !== 'undefined') {
+      const sel = GameplanCanvas.getSelectedNode();
+      if (sel && sel.type === 'position' && sel.libraryId) {
+        const suggested = sorted.filter(en => en.fromPositionId === sel.libraryId);
+        if (suggested.length > 0) {
+          const rows = suggested.map(en => {
+            const dest = en.toPositionId ? byId[en.toPositionId] : null;
+            const destStr = dest ? ' &rarr; ' + UI.esc(dest.label) : '';
+            return `
+              <button class="gp-suggest-item" data-action="gp-library-suggest-add" data-library-id="${en.id}" data-from-node-id="${sel.id}">
+                <svg class="gp-library-item-icon gp-library-icon-${en.type}" width="18" height="18" viewBox="0 0 22 22">${typeIcons[en.type]}</svg>
+                <span class="gp-suggest-item-name">${UI.esc(en.label)}${destStr}</span>
+                <span class="gp-suggest-item-plus">+</span>
+              </button>`;
+          }).join('');
+          suggestHtml = `
+            <div class="gp-library-suggest">
+              <div class="gp-library-suggest-title">From ${UI.esc(sel.label)} <span class="gp-library-suggest-hint">adds connected</span></div>
+              ${rows}
+            </div>`;
+        }
+      }
+    }
+
+    const starterBtn = `
+      <button class="gp-library-starter-btn gp-library-move" data-action="gp-library-add-starters">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add starter moves (standard BJJ positions &amp; submissions)
+      </button>`;
 
     // Gameplans (exclude current)
     const otherPlans = (gameplans || []).filter(gp => gp.id !== currentGameplanId);
@@ -276,6 +360,7 @@ const GameplanUI = {
           <button class="gp-detail-close" data-action="gp-close-library" aria-label="Close">&times;</button>
         </div>
         <input class="gp-detail-input gp-library-search" id="gp-library-search" type="text" placeholder="Search..." autocomplete="off">
+        ${suggestHtml}
         <div class="gp-library-add-row">
           <span class="gp-library-add-label">Add:</span>
           <button class="gp-library-add-btn gp-library-add-position" data-action="gp-library-create" data-type="position">
@@ -321,6 +406,7 @@ const GameplanUI = {
         <div class="gp-library-list">
           ${movesHtml}
           ${gameplansHtml}
+          ${starterBtn}
         </div>
       </div>`;
 
@@ -376,6 +462,46 @@ const GameplanUI = {
          </button>`
       : '';
 
+    // Tags as removable chips
+    const tags = entry.tags || [];
+    const tagsHtml = tags.map((t, i) => `
+      <span class="gp-tag-chip">${UI.esc(t)}<button class="gp-tag-remove" data-action="gp-lib-remove-tag" data-tag-index="${i}" aria-label="Remove tag ${UI.esc(t)}">&times;</button></span>
+    `).join('');
+
+    // Variant-of selector: other entries of the same type
+    const cache = Object.values(GameplanStore._libraryCache || {});
+    const allEntries = cache
+      .filter(e => e.type === entry.type && e.id !== entry.id)
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const variantOptions = ['<option value="">None (standalone move)</option>']
+      .concat(allEntries.map(e =>
+        `<option value="${UI.esc(e.id)}"${entry.variantOf === e.id ? ' selected' : ''}>${UI.esc(e.label)}</option>`
+      )).join('');
+
+    // Category input with datalist of existing categories
+    const categories = [...new Set(cache.map(e => e.category).filter(Boolean))].sort();
+    const categoryDatalist = categories.map(c => `<option value="${UI.esc(c)}"></option>`).join('');
+
+    // From/To position selects (transitions and submissions only)
+    const positions = cache
+      .filter(e => e.type === 'position')
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const posOptions = (selectedId) => ['<option value="">None</option>']
+      .concat(positions.map(p =>
+        `<option value="${UI.esc(p.id)}"${selectedId === p.id ? ' selected' : ''}>${UI.esc(p.label)}</option>`
+      )).join('');
+    const fromToHtml = (entry.type === 'transition' || entry.type === 'submission') ? `
+        <div class="gp-detail-section gp-fromto-row">
+          <div class="gp-fromto-col">
+            <label class="gp-detail-label">From position</label>
+            <select class="gp-detail-input gp-detail-select" id="gp-lib-from-select">${posOptions(entry.fromPositionId)}</select>
+          </div>
+          <div class="gp-fromto-col">
+            <label class="gp-detail-label">To position</label>
+            <select class="gp-detail-input gp-detail-select" id="gp-lib-to-select">${posOptions(entry.toPositionId)}</select>
+          </div>
+        </div>` : '';
+
     const overlay = document.createElement('div');
     overlay.className = 'gp-lib-detail-overlay';
     overlay.setAttribute('data-library-id', entry.id);
@@ -396,6 +522,44 @@ const GameplanUI = {
         <div class="gp-detail-section">
           <label class="gp-detail-label">Name</label>
           <input class="gp-detail-input" id="gp-lib-detail-label" type="text" value="${UI.esc(entry.label)}" data-action="gp-lib-edit-label" placeholder="Move name">
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Category</label>
+          <input class="gp-detail-input" id="gp-lib-category-input" type="text" list="gp-category-datalist" value="${UI.esc(entry.category || '')}" placeholder="e.g. Guards, Sweeps, Chokes...">
+          <datalist id="gp-category-datalist">${categoryDatalist}</datalist>
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Variant of</label>
+          <select class="gp-detail-input gp-detail-select" id="gp-lib-variant-select" data-action="gp-lib-set-variant">
+            ${variantOptions}
+          </select>
+        </div>
+        ${fromToHtml}
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Tags <span class="gp-detail-count">${tags.length}</span></label>
+          <div class="gp-tags-list" id="gp-lib-tags-list">
+            ${tagsHtml || '<p class="gp-empty-sub">No tags yet (e.g. gi, no-gi, top, bottom, sweep)</p>'}
+          </div>
+          <div class="gp-note-add-row">
+            <input class="gp-detail-input" id="gp-lib-tag-input" type="text" placeholder="Add a tag..." autocapitalize="off">
+            <button class="gp-detail-add-btn" data-action="gp-lib-add-tag">+</button>
+          </div>
+        </div>
+
+        <div class="gp-detail-section">
+          <label class="gp-detail-label">Also known as <span class="gp-detail-count">${(entry.aliases || []).length}</span></label>
+          <div class="gp-tags-list" id="gp-lib-aliases-list">
+            ${(entry.aliases || []).map((a, i) => `
+              <span class="gp-tag-chip gp-alias-chip">${UI.esc(a)}<button class="gp-tag-remove" data-action="gp-lib-remove-alias" data-alias-index="${i}" aria-label="Remove alias ${UI.esc(a)}">&times;</button></span>
+            `).join('') || '<p class="gp-empty-sub">No other names (e.g. SLX, Ashi Garami)</p>'}
+          </div>
+          <div class="gp-note-add-row">
+            <input class="gp-detail-input" id="gp-lib-alias-input" type="text" placeholder="Add another name..." autocapitalize="off">
+            <button class="gp-detail-add-btn" data-action="gp-lib-add-alias">+</button>
+          </div>
         </div>
 
         <div class="gp-detail-section">

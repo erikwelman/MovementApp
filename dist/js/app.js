@@ -75,6 +75,9 @@ const App = {
       case 'gp-list':
         GameplanStore.getAll().then(plans => {
           app.innerHTML = GameplanUI.renderList(plans);
+        }).catch(err => {
+          console.error('Failed to load gameplans', err);
+          app.innerHTML = GameplanUI.renderList([]);
         });
         break;
       case 'gp-editor':
@@ -83,6 +86,10 @@ const App = {
           this._currentGameplan = gp;
           app.innerHTML = GameplanUI.renderEditor(gp);
           GameplanCanvas.init('gp-svg-container', gp);
+        }).catch(err => {
+          console.error('Failed to open gameplan', err);
+          alert('Could not open this gameplan. See console for details.');
+          this.render('gp-list');
         });
         break;
     }
@@ -283,6 +290,72 @@ const App = {
           return;
         }
 
+        if (action === 'gp-edit-conn-label') {
+          const connId = GameplanCanvas._selectedConnId;
+          if (connId) {
+            const conn = GameplanCanvas.getConnection(connId);
+            const current = conn ? conn.label : '';
+            const label = prompt('Connection label (e.g. "if opponent posts"):', current);
+            if (label !== null) {
+              GameplanCanvas.updateConnectionLabel(connId, label.trim());
+            }
+          }
+          return;
+        }
+
+        if (action === 'gp-export') {
+          GameplanStore.exportData().then(data => {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = 'movement-gameplans-' + stamp + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }).catch(err => {
+            console.error('Export failed', err);
+            alert('Export failed. See console for details.');
+          });
+          return;
+        }
+
+        if (action === 'gp-import') {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json,application/json';
+          input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              let data;
+              try {
+                data = JSON.parse(reader.result);
+              } catch (err) {
+                alert('That file is not valid JSON.');
+                return;
+              }
+              const libCount = Array.isArray(data.library) ? data.library.length : 0;
+              const gpCount = Array.isArray(data.gameplans) ? data.gameplans.length : 0;
+              if (!confirm('Import ' + gpCount + ' gameplan(s) and ' + libCount + ' library move(s)?\n\n' +
+                'Items with matching ids will be overwritten; everything else is kept.')) return;
+              GameplanStore.importData(data).then(() => {
+                this.render('gp-list');
+              }).catch(err => {
+                console.error('Import failed', err);
+                alert('Import failed: ' + err.message);
+              });
+            };
+            reader.readAsText(file);
+          });
+          input.click();
+          return;
+        }
+
         if (action === 'gp-tap-connection') {
           const connId = actionEl.dataset.connHit;
           if (connId) {
@@ -335,17 +408,15 @@ const App = {
           const typeNames = { position: 'Position', transition: 'Transition', submission: 'Submission', reaction: 'Reaction' };
           const name = prompt('Name this ' + (typeNames[type] || 'move') + ':');
           if (name && name.trim()) {
-            const entry = GameplanData.createLibraryEntry(type, name.trim());
-            GameplanStore.saveLibraryEntry(entry);
-            // Refresh library view
-            Promise.all([
-              GameplanStore.getLibrary(),
-              GameplanStore.getAll()
-            ]).then(([entries, plans]) => {
-              const currentId = GameplanCanvas.getGameplan() ? GameplanCanvas.getGameplan().id : null;
-              GameplanUI.closeLibrary();
-              setTimeout(() => GameplanUI.showLibrary(entries, plans, currentId), 210);
-            });
+            // Reuse an existing move with this name instead of duplicating
+            const existing = GameplanStore.findLibraryEntry(name.trim(), type);
+            if (existing) {
+              alert('"' + existing.label + '" is already in the library.');
+            } else {
+              const entry = GameplanData.createLibraryEntry(type, name.trim());
+              GameplanStore.saveLibraryEntry(entry);
+            }
+            this._refreshLibraryOverlay();
           }
           return;
         }
@@ -368,18 +439,48 @@ const App = {
           return;
         }
 
+        if (action === 'gp-library-suggest-add') {
+          const libId = actionEl.dataset.libraryId;
+          const fromNodeId = actionEl.dataset.fromNodeId;
+          if (libId) {
+            GameplanCanvas.addNodeFromLibrary(libId, fromNodeId || null);
+            GameplanUI.closeLibrary();
+          }
+          return;
+        }
+
         if (action === 'gp-library-delete') {
           const libId = actionEl.dataset.libraryId;
           if (libId) {
             const entry = GameplanStore.getLibraryEntry(libId);
             const name = entry ? entry.label : 'this move';
-            if (confirm('Remove "' + name + '" from the library? This cannot be undone.')) {
-              GameplanStore.deleteLibraryEntry(libId);
-              // Remove the item from the DOM
-              const item = actionEl.closest('.gp-library-item');
-              if (item) item.remove();
-            }
+            // Check whether any gameplan still uses this move before deleting
+            GameplanStore.countLibraryUsage(libId).then(usage => {
+              let msg;
+              if (usage.nodeCount > 0) {
+                msg = '"' + name + '" is used by ' + usage.nodeCount + ' node' + (usage.nodeCount !== 1 ? 's' : '') +
+                  ' in: ' + usage.planNames.join(', ') + '.\n\n' +
+                  'Deleting it will leave those nodes as "(missing move)" placeholders. Delete anyway?';
+              } else {
+                msg = 'Remove "' + name + '" from the library? This cannot be undone.';
+              }
+              if (confirm(msg)) {
+                GameplanStore.deleteLibraryEntry(libId);
+                const item = actionEl.closest('.gp-library-item');
+                if (item) item.remove();
+              }
+            });
           }
+          return;
+        }
+
+        if (action === 'gp-library-add-starters') {
+          GameplanStore.addStarterLibrary().then(added => {
+            alert(added > 0
+              ? 'Added ' + added + ' starter move' + (added !== 1 ? 's' : '') + ' to your library.'
+              : 'All starter moves are already in your library.');
+            if (added > 0) this._refreshLibraryOverlay();
+          });
           return;
         }
 
@@ -458,6 +559,56 @@ const App = {
               GameplanStore.saveLibraryEntry(entry);
               GameplanUI.showLibraryEntryDetail(entry);
             }
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-add-tag') {
+          const input = document.getElementById('gp-lib-tag-input');
+          const entry = this._getOpenLibraryEntry();
+          if (input && input.value.trim() && entry) {
+            const tag = input.value.trim().toLowerCase();
+            if (!entry.tags.includes(tag)) {
+              entry.tags.push(tag);
+              GameplanStore.saveLibraryEntry(entry);
+            }
+            GameplanUI.showLibraryEntryDetail(entry);
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-remove-tag') {
+          const idx = parseInt(actionEl.dataset.tagIndex);
+          const entry = this._getOpenLibraryEntry();
+          if (entry && !isNaN(idx)) {
+            entry.tags.splice(idx, 1);
+            GameplanStore.saveLibraryEntry(entry);
+            GameplanUI.showLibraryEntryDetail(entry);
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-add-alias') {
+          const input = document.getElementById('gp-lib-alias-input');
+          const entry = this._getOpenLibraryEntry();
+          if (input && input.value.trim() && entry) {
+            const alias = input.value.trim();
+            if (!entry.aliases.some(a => a.toLowerCase() === alias.toLowerCase())) {
+              entry.aliases.push(alias);
+              GameplanStore.saveLibraryEntry(entry);
+            }
+            GameplanUI.showLibraryEntryDetail(entry);
+          }
+          return;
+        }
+
+        if (action === 'gp-lib-remove-alias') {
+          const idx = parseInt(actionEl.dataset.aliasIndex);
+          const entry = this._getOpenLibraryEntry();
+          if (entry && !isNaN(idx)) {
+            entry.aliases.splice(idx, 1);
+            GameplanStore.saveLibraryEntry(entry);
+            GameplanUI.showLibraryEntryDetail(entry);
           }
           return;
         }
@@ -580,6 +731,14 @@ const App = {
           }
         }
       }
+      // Library entry detail: category editing
+      if (e.target.id === 'gp-lib-category-input') {
+        const entry = this._getOpenLibraryEntry();
+        if (entry) {
+          entry.category = e.target.value.trim() || null;
+          GameplanStore.saveLibraryEntry(entry);
+        }
+      }
       // Library entry detail: label editing
       if (e.target.id === 'gp-lib-detail-label') {
         const overlay = document.querySelector('.gp-lib-detail-overlay');
@@ -607,6 +766,38 @@ const App = {
       }
     });
 
+    // Library entry detail: variant-of and from/to position selectors
+    document.getElementById('app').addEventListener('change', (e) => {
+      if (e.target.id === 'gp-lib-variant-select') {
+        const entry = this._getOpenLibraryEntry();
+        if (entry) {
+          entry.variantOf = e.target.value || null;
+          GameplanStore.saveLibraryEntry(entry);
+        }
+      }
+      if (e.target.id === 'gp-lib-from-select') {
+        const entry = this._getOpenLibraryEntry();
+        if (entry) {
+          entry.fromPositionId = e.target.value || null;
+          GameplanStore.saveLibraryEntry(entry);
+        }
+      }
+      if (e.target.id === 'gp-lib-to-select') {
+        const entry = this._getOpenLibraryEntry();
+        if (entry) {
+          entry.toPositionId = e.target.value || null;
+          GameplanStore.saveLibraryEntry(entry);
+        }
+      }
+    });
+
+    // Don't lose the last edit if the app is closed or backgrounded
+    // before the debounced save fires
+    window.addEventListener('pagehide', () => GameplanCanvas.flush());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') GameplanCanvas.flush();
+    });
+
     // Global keyboard handler
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -628,6 +819,12 @@ const App = {
         const gpDetail = document.querySelector('.gp-node-detail-overlay');
         if (gpDetail) {
           GameplanUI.closeNodeDetail();
+          return;
+        }
+
+        // Exit connect mode
+        if (GameplanCanvas._connectMode) {
+          GameplanCanvas.setConnectMode(false);
           return;
         }
 
@@ -678,7 +875,8 @@ const App = {
     // Show/hide moves and gameplans based on filter
     const items = document.querySelectorAll('.gp-library-item, .gp-empty-sub');
     items.forEach(item => {
-      const label = (item.dataset.label || '').toLowerCase();
+      // Search matches name, aliases, tags, and parent move name
+      const haystack = (item.dataset.search || item.dataset.label || '').toLowerCase();
       const type = item.dataset.type || '';
       const isMove = item.classList.contains('gp-library-move');
       const isGameplan = item.classList.contains('gp-library-gameplan');
@@ -687,7 +885,7 @@ const App = {
         // Show only gameplans
         if (isMove) { item.style.display = 'none'; return; }
         if (isGameplan) {
-          const matchesSearch = !query || label.includes(query);
+          const matchesSearch = !query || haystack.includes(query);
           item.style.display = matchesSearch ? '' : 'none';
           return;
         }
@@ -695,7 +893,7 @@ const App = {
         // Show only moves (hide gameplans)
         if (isGameplan) { item.style.display = 'none'; return; }
         if (isMove) {
-          const matchesSearch = !query || label.includes(query);
+          const matchesSearch = !query || haystack.includes(query);
           const matchesType = typeFilter === 'all' || type === typeFilter;
           item.style.display = (matchesSearch && matchesType) ? '' : 'none';
           return;
@@ -706,6 +904,49 @@ const App = {
         item.style.display = (typeFilter === 'gameplan' && item.classList.contains('gp-library-gameplan')) ||
                              (typeFilter !== 'gameplan' && item.classList.contains('gp-library-move')) ? '' : 'none';
       }
+    });
+
+    // Starter-library button: only relevant when browsing moves
+    const starterBtn = document.querySelector('.gp-library-starter-btn');
+    if (starterBtn) starterBtn.style.display = typeFilter === 'gameplan' ? 'none' : '';
+
+    // Category headers: hide when searching, or when no item in the group is visible
+    document.querySelectorAll('.gp-library-group-header').forEach(header => {
+      if (query || typeFilter === 'gameplan') { header.style.display = 'none'; return; }
+      let anyVisible = false;
+      let el = header.nextElementSibling;
+      while (el && !el.classList.contains('gp-library-group-header')) {
+        if (el.classList.contains('gp-library-item') && el.style.display !== 'none') {
+          anyVisible = true;
+          break;
+        }
+        el = el.nextElementSibling;
+      }
+      header.style.display = anyVisible ? '' : 'none';
+    });
+
+    // "From here" suggestions: hide while searching or on the gameplan filter
+    const suggest = document.querySelector('.gp-library-suggest');
+    if (suggest) suggest.style.display = (query || typeFilter === 'gameplan') ? 'none' : '';
+  },
+
+  // The library entry whose detail overlay is currently open
+  _getOpenLibraryEntry() {
+    const overlay = document.querySelector('.gp-lib-detail-overlay');
+    const libId = overlay ? overlay.dataset.libraryId : null;
+    return libId ? GameplanStore.getLibraryEntry(libId) : null;
+  },
+
+  // Re-render the library overlay in place (after adds/imports)
+  _refreshLibraryOverlay() {
+    const overlay = document.querySelector('.gp-library-overlay');
+    if (!overlay) return;
+    Promise.all([
+      GameplanStore.getLibrary(),
+      GameplanStore.getAll()
+    ]).then(([entries, plans]) => {
+      const currentId = GameplanCanvas.getGameplan() ? GameplanCanvas.getGameplan().id : null;
+      GameplanUI.showLibrary(entries, plans, currentId, GameplanUI._libraryMode);
     });
   },
 

@@ -8,6 +8,7 @@ const ASSETS = [
   './js/bjj-data.js',
   './js/timer.js',
   './js/progress.js',
+  './js/gameplan-seed-data.js',
   './js/gameplan-data.js',
   './js/gameplan-store.js',
   './js/gameplan-canvas.js',
