@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movement-app-v04b32a82014d';
+const CACHE_NAME = 'movement-app-v99765c84648c';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,10 @@ const ASSETS = [
   './js/bjj-data.js',
   './js/timer.js',
   './js/progress.js',
+  './js/rules-data.js',
+  './js/rules-progress.js',
+  './js/rules-quiz.js',
+  './js/rules-ui.js',
   './js/gameplan-seed-data.js',
   './js/gameplan-data.js',
   './js/gameplan-store.js',

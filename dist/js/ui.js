@@ -41,6 +41,10 @@ const UI = {
     const hipSubtext = daysCompleted > 0 ? `${daysCompleted}/21 days complete` : 'Start your journey';
     const gpCount = GameplanStore.count;
     const gpSubtext = gpCount > 0 ? `${gpCount} gameplan${gpCount !== 1 ? 's' : ''}` : 'Map your BJJ game';
+    const rulesUnitsDone = RULES_UNITS.filter(u => RulesProgress.unitProgress(u.id).complete).length;
+    const rulesSubtext = rulesUnitsDone > 0
+      ? `${rulesUnitsDone}/${RULES_UNITS.length} sections mastered`
+      : 'Know the rules, win the scrambles';
 
     return `
       <div class="screen main-home-screen" role="main" aria-label="Movement App">
@@ -55,6 +59,17 @@ const UI = {
               <div class="workout-card-icon" aria-hidden="true">&#x1F4CB;</div>
               <h2 class="workout-card-title">BJJ Gameplan</h2>
               <p class="workout-card-sub">${gpSubtext}</p>
+            </button>
+          </div>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">Learn</h2>
+          <div class="workout-cards">
+            <button class="workout-card workout-card-rules" data-nav="rules-home" aria-label="IBJJF Rules">
+              <div class="workout-card-icon" aria-hidden="true">&#x2696;&#xFE0F;</div>
+              <h2 class="workout-card-title">IBJJF Rules</h2>
+              <p class="workout-card-sub">${rulesSubtext}</p>
             </button>
           </div>
         </section>

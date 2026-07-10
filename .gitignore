@@ -1,0 +1,8 @@
+# Transient local videos — uploaded to YouTube, then deleted (see add-video workflow)
+Videos/
+
+# Source PDFs (IBJJF copyrighted docs; extracted images are committed instead)
+BJJ Rules/
+
+# Local planning notes
+Video Tool in App_Claude Plan.docx

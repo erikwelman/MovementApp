@@ -9,8 +9,12 @@ const App = {
 
   _currentGameplan: null,
 
+  _checkerState: { gi: null, belt: null, tech: null },
+  _lastQuizResult: null,
+
   init() {
     Progress.load();
+    RulesProgress.load();
     this.currentDay = Progress.getCurrentDay();
     this.bindGlobalEvents();
     GameplanStore.init().then(() => {
@@ -69,6 +73,35 @@ const App = {
         break;
       case 'bjj-complete':
         app.innerHTML = UI.renderBjjComplete();
+        break;
+
+      // ── IBJJF Rules screens ───────────────────────────────
+      case 'rules-home':
+        app.innerHTML = RulesUI.renderHome();
+        break;
+      case 'rules-cards':
+        app.innerHTML = RulesUI.renderCards(params.unit, params.index || 0);
+        break;
+      case 'rules-lessons':
+        app.innerHTML = RulesUI.renderLessonPicker(params.unit);
+        break;
+      case 'rules-quiz':
+        // Always a fresh session; bounce home if the lesson id is unknown
+        if (!params || !RulesQuiz.start(params.lesson)) {
+          app.innerHTML = RulesUI.renderHome();
+          break;
+        }
+        app.innerHTML = RulesUI.renderQuiz();
+        break;
+      case 'rules-result':
+        if (!this._lastQuizResult || !RulesQuiz.session) {
+          app.innerHTML = RulesUI.renderHome();
+          break;
+        }
+        app.innerHTML = RulesUI.renderResult(this._lastQuizResult);
+        break;
+      case 'rules-checker':
+        app.innerHTML = RulesUI.renderChecker(this._checkerState);
         break;
 
       // ── Gameplan screens ──────────────────────────────────
@@ -137,6 +170,16 @@ const App = {
           this.render('gp-list');
         } else if (nav === 'gp-editor') {
           this.render('gp-editor', { id: target.dataset.gpId });
+        } else if (nav === 'rules-home') {
+          this.render('rules-home');
+        } else if (nav === 'rules-cards') {
+          this.render('rules-cards', { unit: target.dataset.unit, index: parseInt(target.dataset.index || 0) });
+        } else if (nav === 'rules-lessons') {
+          this.render('rules-lessons', { unit: target.dataset.unit });
+        } else if (nav === 'rules-quiz') {
+          this.render('rules-quiz', { lesson: target.dataset.lesson });
+        } else if (nav === 'rules-checker') {
+          this.render('rules-checker');
         }
         return;
       }
@@ -628,6 +671,103 @@ const App = {
           GameplanUI.closeLibrary();
           return;
         }
+
+        // ── IBJJF Rules actions ───────────────────────────────
+
+        if (action === 'rules-answer') {
+          const choiceIdx = parseInt(actionEl.dataset.choice);
+          const res = RulesQuiz.answer(choiceIdx);
+          if (!res) return; // already answered — ignore double taps
+
+          document.querySelectorAll('#rules-quiz-choices .quiz-choice').forEach((btn, i) => {
+            btn.disabled = true;
+            if (i === res.answerIdx) btn.classList.add('correct');
+            if (i === choiceIdx && !res.isCorrect) btn.classList.add('wrong');
+          });
+
+          const fb = document.getElementById('rules-feedback');
+          const head = document.getElementById('rules-feedback-headline');
+          const text = document.getElementById('rules-feedback-text');
+          const nextBtn = document.getElementById('rules-next-btn');
+          if (fb && head && text && nextBtn) {
+            head.textContent = res.isCorrect
+              ? rulesRandomCopy(RULES_COPY.correct)
+              : rulesRandomCopy(RULES_COPY.wrong);
+            text.textContent = res.feedback;
+            fb.classList.add('show', res.isCorrect ? 'good' : 'bad');
+            const isLast = RulesQuiz.session.index === RulesQuiz.total() - 1;
+            nextBtn.textContent = isLast ? 'See results' : 'Continue';
+            nextBtn.focus();
+          }
+          if (navigator.vibrate) navigator.vibrate(res.isCorrect ? 50 : [60, 40, 60]);
+          return;
+        }
+
+        if (action === 'rules-next') {
+          if (RulesQuiz.next()) {
+            document.getElementById('app').innerHTML = RulesUI.renderQuiz();
+          } else {
+            this._lastQuizResult = RulesQuiz.finish();
+            this.render('rules-result');
+          }
+          return;
+        }
+
+        if (action === 'rules-quit') {
+          const lesson = RulesQuiz.lesson();
+          if (confirm('Quit this lesson? Progress in it won\'t be saved.')) {
+            const unitId = lesson ? lesson.unitId : null;
+            RulesQuiz.clear();
+            if (unitId) {
+              this.render('rules-lessons', { unit: unitId });
+            } else {
+              this.render('rules-home');
+            }
+          }
+          return;
+        }
+
+        if (action === 'rules-card-done') {
+          const unitId = actionEl.dataset.unit;
+          const index = parseInt(actionEl.dataset.index);
+          const unit = RULES_UNITS.find(u => u.id === unitId);
+          const cards = unit ? RULES_CARDS[unit.cards] : null;
+          if (!cards || !cards[index]) return;
+          RulesProgress.markCardRead(cards[index].id);
+          if (index < cards.length - 1) {
+            this.render('rules-cards', { unit: unitId, index: index + 1 });
+          } else if (unit.lessons.length) {
+            this.render('rules-lessons', { unit: unitId });
+          } else {
+            this.render('rules-home');
+          }
+          return;
+        }
+
+        if (action === 'rules-reveal') {
+          const box = document.getElementById('rules-mini-quiz');
+          if (box) {
+            box.classList.add('revealed');
+            actionEl.setAttribute('aria-expanded', 'true');
+          }
+          return;
+        }
+
+        if (action === 'rules-check-set') {
+          const field = actionEl.dataset.field;
+          this._checkerState[field] = actionEl.dataset.value || null;
+          if (field === 'tech' && this._checkerState.tech) {
+            RulesProgress.addCheckerLookup();
+          }
+          this.render('rules-checker');
+          return;
+        }
+
+        if (action === 'rules-check-reset') {
+          this._checkerState = { gi: null, belt: null, tech: null };
+          this.render('rules-checker');
+          return;
+        }
       }
 
       // Image lightbox
@@ -846,6 +986,13 @@ const App = {
         const poseOverlay = document.querySelector('.pose-complete-overlay');
         if (poseOverlay) {
           poseOverlay.remove();
+          return;
+        }
+
+        // Quit a rules lesson in progress (with confirm)
+        const quizQuit = document.querySelector('.rules-quiz-screen [data-action="rules-quit"]');
+        if (quizQuit) {
+          quizQuit.click();
           return;
         }
       }
